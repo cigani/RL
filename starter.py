@@ -50,7 +50,7 @@ class DummyAgent:
         self.e = np.zeros((neurons, neurons, 3))
         self.weights = 0.01 * np.random.rand((neurons, neurons, 3)) + 0.1
 
-        # self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
+        self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
         self.action_index_ = {"1": 0, "-1": 1, "0": 2}
         self.last_action = None
         self.action = None
@@ -96,11 +96,11 @@ class DummyAgent:
         # This is your job!
         pass
 
-    def input_layer_activity(self, centers):
-        rj = np.exp(((centers[0] - self.state[0]) ** 2) /
+    def input_layer_activity(self, neuron_index):
+        rj = np.exp(((neuron_index[0] - self.state[0]) ** 2) /
                     self.x_centers_distance **
                     2 -
-                    ((centers[1] - self.state[1]) ** 2) /
+                    ((neuron_index[1] - self.state[1]) ** 2) /
                     self.phi_centers_distance
                     ** 2)
         return rj
@@ -142,8 +142,9 @@ class DummyAgent:
         Determined by soft-max rule.
         Cumulative probabilities for quick implementation.
         """
-        c_prob_left = self.soft_max_rule(0)
-        c_prob_right = c_prob_left + self.soft_max_rule(1)
+
+        c_prob_left = self.soft_max_rule(self.activity["Left"])
+        c_prob_right = c_prob_left + self.soft_max_rule(self.activity["Right"])
 
         test_value = np.random.rand()
 
@@ -167,10 +168,10 @@ class DummyAgent:
         """
         For the denominator of the soft-max algorithm
         """
-        total_Q = 0.0
-        for action in np.arange(2):
-            total_Q += np.exp(self.output_layer_activity(action))
-        return total_Q
+        total_q = 0.0
+        for action in self.action_index_.values():
+            total_q += np.exp(self.output_layer_activity(action))
+        return total_q
 
     def update_state(self, command):
         self.last_action = self.action
