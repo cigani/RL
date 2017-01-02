@@ -12,7 +12,8 @@ class DummyAgent:
     def __init__(self, mountain_car=None, eta=0.1, gamma=.95, lam=0.0,
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
-                 temperature_half_life=1.0, neurons=5):
+                 temperature_half_life=1.0, neurons=5, time=100,
+                 dt=0.01):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -36,6 +37,7 @@ class DummyAgent:
         self.min_temperature_ = min_temperature
         self.temperature_half_life_ = temperature_half_life
 
+        # Neuron Centers
         self.neuron = neurons
         self.neuron_count = self.neuron ** 2
         _x_space_, self.x_centers_distance = np.linspace(-150, 30, neurons,
@@ -44,18 +46,27 @@ class DummyAgent:
                                                              retstep=True)
         self.centers = [_x_space_, _x_d_space_]
 
-        # self.Q = np.zeros(3)
-
-        # Trace Memory
-        self.e = np.zeros((neurons, neurons, 3))
-        self.weights = 0.01 * np.random.rand((neurons, neurons, 3)) + 0.1
-
+        # Activity / State Parameters
         self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
         self.action_index_ = {"1": 0, "-1": 1, "0": 2}
         self.last_action = None
         self.action = None
         self.old_state = None
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
+
+        # Trace Memory
+        self.e = np.zeros(
+            (self.neuron,
+             self.neuron,
+             len(self.action.values())))
+        self.weights = 0.01 * np.random.rand(
+            (self.neuron,
+             self.neuron,
+             len(self.action.values()))) + 0.1
+
+        # Time step for Simulation
+        self.time = time
+        self.dt = dt
 
     def visualize_trial(self, n_steps=200):
         """Do a trial without learning, with display.
@@ -179,7 +190,10 @@ class DummyAgent:
         self.old_x = self.mountain_car.x
         self.old_x_d = self.mountain_car.x_d
         self.old_state = [self.old_x, self.old_x_d]
+
         self.mountain_car.apply_force(self.action)
+        self.mountain_car.simulate_timesteps(self.time, self.dt)
+
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
         self.state = [self.x, self.x_d]
