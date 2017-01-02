@@ -3,6 +3,7 @@ import sys
 import pylab as plb
 import numpy as np
 import mountaincar
+import itertools
 
 
 class DummyAgent:
@@ -13,7 +14,7 @@ class DummyAgent:
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=5, time=100,
-                 dt=0.01):
+                 dt=0.01, actions=3):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -44,7 +45,8 @@ class DummyAgent:
                                                          retstep=True)
         _x_d_space_, self.phi_centers_distance = np.linspace(-15, 15, neurons,
                                                              retstep=True)
-        self.centers = [_x_space_, _x_d_space_]
+        self.centers = np.array(list(itertools.product(_x_space_,
+                                                       _x_d_space_)))
 
         # Activity / State Parameters
         self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
@@ -55,20 +57,14 @@ class DummyAgent:
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
 
         # Trace Memory
-        self.e = np.zeros(
-            (self.neuron,
-             self.neuron,
-             len(self.action.values())))
-        self.weights = 0.01 * np.random.rand(
-            (self.neuron,
-             self.neuron,
-             len(self.action.values()))) + 0.1
+        self.e = np.zeros((self.neuron_count, actions))
+        self.weights = 0.01 * np.random.rand(self.neuron_count, actions)
 
         # Time step for Simulation
         self.time = time
         self.dt = dt
 
-    def visualize_trial(self, n_steps=200):
+    def visualize_trial(self, n_steps=6000):
         """Do a trial without learning, with display.
 
         Parameters
@@ -90,22 +86,21 @@ class DummyAgent:
             sys.stdout.flush()
 
             # choose a random action
-            self.mountain_car.apply_force(-1)
+            #self.mountain_car.apply_force(-1)
             # simulate the timestep
-            self.mountain_car.simulate_timesteps(100, 0.01)
+            #self.mountain_car.simulate_timesteps(100, 0.01)
 
             # update the visualization
             mv.update_figure()
             plb.draw()
-
+            self.learn()
             # check for rewards
             if self.mountain_car.R > 0.0:
                 print("\rreward obtained at t = ", self.mountain_car.t)
                 break
 
     def learn(self):
-        # This is your job!
-        pass
+        self.action_choice()
 
     def input_layer_activity(self, neuron_index):
         rj = np.exp(((neuron_index[0] - self.state[0]) ** 2) /
@@ -116,13 +111,11 @@ class DummyAgent:
                     ** 2)
         return rj
 
-    def output_layer_activity(self, action):
-        weights = self.weights
-        action_index = self.action_index_["{}".format(action)]
+    def output_layer_activity(self, action_index):
         q_weights = 0.0
         for n in np.arange(self.neuron_count):
-            q_weights += weights[n][action_index] * self.input_layer_activity(
-                self.centers[n])
+            q_weights += (self.weights[n][action_index] *
+                          self.input_layer_activity(self.centers[n]))
         return q_weights
 
     def td_error(self):
@@ -136,9 +129,9 @@ class DummyAgent:
         """
         Eligibility updates using the SARSA protocol.
         """
-        action = self.action_index_["{}".format(self.action)]
+        action = self.action_index_["{}".format(self.last_action)]
         self.e *= self.lambda_ * self.gamma_
-        self.e[:, :, action] += 1
+        self.e[:, action] += 1
 
     def update_weights(self):
         """
