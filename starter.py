@@ -50,7 +50,7 @@ class DummyAgent:
         self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
         self.action_index_ = {"1": 0, "-1": 1, "0": 2}
         self.last_action = None
-        self.action = None
+        self.action = 0
         self.old_state = None
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
 
@@ -136,7 +136,7 @@ class DummyAgent:
         """
         Eligibility updates using the SARSA protocol.
         """
-        action = self.action_index_["{}".format(self.last_action)]
+        action = self.action_index_["{}".format(self.action)]
         self.e *= self.lambda_ * self.gamma_
         self.e[:, :, action] += 1
 
