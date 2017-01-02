@@ -44,6 +44,9 @@ class DummyAgent:
             for phi in self.phi_centers_distance:
                 self.centers.append([x, phi])
 
+        # Trace Memory
+        self.e = np.zeros((neurons, neurons, 3))
+
         self.activity = {"Forward": 0, "Reverse": 1, "Neutral": 2}
 
     def visualize_trial(self, n_steps=200):
@@ -107,6 +110,18 @@ class DummyAgent:
         w = np.ones((self.neuron_count, 3))
         # Code to update weights
         return w
+
+    def update_state(self, command):
+        action = self.activity["{}".format(command)]
+        self.old_x = self.mountain_car.x
+        self.old_x_d = self.mountain_car.x_d
+        self.mountain_car.apply_force(action)
+        self.x = self.mountain_car.x
+        self.x_d = self.mountain_car.x_d
+
+
+
+
 
 
 if __name__ == "__main__":
