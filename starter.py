@@ -36,18 +36,19 @@ class DummyAgent:
         self.min_temperature_ = min_temperature
         self.temperature_half_life_ = temperature_half_life
 
-        self.neuron_count = neurons ** 2
-        self.x_centers_distance = np.arange(-150, 30) / neurons
-        self.phi_centers_distance = np.arange(-15, 15) / neurons
-        self.centers = []
-        for x in self.x_centers_distance:
-            for phi in self.phi_centers_distance:
-                self.centers.append([x, phi])
-
+        self.neuron = neurons
+        self.neuron_count = self.neuron ** 2
+        _x_space_, self.x_centers_distance = np.linspace(-150, 30, neurons,
+                                                         retstep=True)
+        _x_d_space_, self.phi_centers_distance = np.linspace(-15, 15, neurons,
+                                                             retstep=True)
+        self.centers = [_x_space_, _x_d_space_]
+        
         # Trace Memory
         self.e = np.zeros((neurons, neurons, 3))
+        self.weights = np.zeros((neurons, neurons, 3))
 
-        self.activity = {"Forward": 0, "Reverse": 1, "Neutral": 2}
+        self.activity = {"Forward": 1, "Reverse": -1, "Neutral": 0}
 
     def visualize_trial(self, n_steps=200):
         """Do a trial without learning, with display.
@@ -99,7 +100,7 @@ class DummyAgent:
 
     def output_layer_activity(self, command):
         action = self.activity["{}".format(command)]
-        weights = self.output_layer_weights()
+        weights = self.weights
         q = 0.0
         for n in np.arange(self.neuron_count):
             q += weights[n][action] * self.input_layer_activity(
@@ -107,9 +108,8 @@ class DummyAgent:
         return q
 
     def output_layer_weights(self):
-        w = np.ones((self.neuron_count, 3))
+        weights = self.weights
         # Code to update weights
-        return w
 
     def update_state(self, command):
         action = self.activity["{}".format(command)]
