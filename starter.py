@@ -64,7 +64,7 @@ class DummyAgent:
         self.time = time
         self.dt = dt
 
-    def visualize_trial(self, n_steps=6000):
+    def visualize_trial(self, n_steps=6000, n_episodes=30, visual=False):
         """Do a trial without learning, with display.
 
         Parameters
@@ -73,31 +73,34 @@ class DummyAgent:
         """
 
         # prepare for the visualization
-        plb.ion()
+        #plb.ion()
         mv = mountaincar.MountainCarViewer(self.mountain_car)
-        mv.create_figure(n_steps, n_steps)
-        plb.draw()
+        #mv.create_figure(n_steps, n_steps)
+        #plb.draw()
 
         # make sure the mountain-car is reset
-        self.mountain_car.reset()
+        for k in np.arange(n_episodes):
+            self.mountain_car.reset()
+            for n in range(n_steps):
+                print('\rt =', self.mountain_car.t),
+                sys.stdout.flush()
 
-        for n in range(n_steps):
-            print('\rt =', self.mountain_car.t),
-            sys.stdout.flush()
+                # choose a random action
+                #self.mountain_car.apply_force(-1)
+                # simulate the timestep
+                #self.mountain_car.simulate_timesteps(100, 0.01)
 
-            # choose a random action
-            #self.mountain_car.apply_force(-1)
-            # simulate the timestep
-            #self.mountain_car.simulate_timesteps(100, 0.01)
+                # update the visualization
+                if visual:
+                    mv.update_figure()
+                    plb.show()
+                    plb.pause(0.0001)
 
-            # update the visualization
-            mv.update_figure()
-            plb.draw()
-            self.learn()
-            # check for rewards
-            if self.mountain_car.R > 0.0:
-                print("\rreward obtained at t = ", self.mountain_car.t)
-                break
+                self.learn()
+                # check for rewards
+                if self.mountain_car.R > 0.0:
+                    print("\rreward obtained at t = ", self.mountain_car.t)
+                    break
 
     def learn(self):
         self.action_choice()
@@ -196,4 +199,4 @@ class DummyAgent:
 if __name__ == "__main__":
     d = DummyAgent()
     d.visualize_trial()
-    plb.show()
+    #plb.show()
