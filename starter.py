@@ -19,14 +19,19 @@ class DummyAgent:
         else:
             self.mountain_car = mountain_car
 
+        # Learning rate
         self.eta_ = eta
+        # Reward Factor
         self.gamma_ = gamma
+        # Decay Eligibility
         self.lambda_ = lam
 
+        # Choice of Random Action or Not
         self.initial_epsilon_ = initial_epsilon
         self.min_epsilon_ = min_epsilon
         self.epsilon_half_life_ = half_life
 
+        # Exploration vs Exploitation parameter
         self.initial_temperature_ = initial_temperature
         self.min_temperature_ = min_temperature
         self.temperature_half_life_ = temperature_half_life
@@ -59,7 +64,7 @@ class DummyAgent:
         self.mountain_car.reset()
 
         for n in range(n_steps):
-            print '\rt =', self.mountain_car.t,
+            print('\rt =', self.mountain_car.t),
             sys.stdout.flush()
 
             # choose a random action
@@ -73,39 +78,35 @@ class DummyAgent:
 
             # check for rewards
             if self.mountain_car.R > 0.0:
-                print "\rreward obtained at t = ", self.mountain_car.t
+                print("\rreward obtained at t = ", self.mountain_car.t)
                 break
 
     def learn(self):
         # This is your job!
         pass
 
-    def input_layer_activity(self, centers, state):
-        rj = np.exp(((centers[0] - state[0]) ** 2) / self.x_centers_distance **
+    def input_layer_activity(self, centers):
+        rj = np.exp(((centers[0] - self.mountain_car.x) ** 2) /
+                    self.x_centers_distance **
                     2 -
-                    ((centers[1] - state[1]) ** 2) / self.phi_centers_distance
+                    ((centers[1] - self.mountain_car.x_d) ** 2) /
+                    self.phi_centers_distance
                     ** 2)
         return rj
 
     def output_layer_activity(self, command):
-        state = self._get_state
         action = self.activity["{}".format(command)]
         weights = self.output_layer_weights()
-        Q = 0.0
+        q = 0.0
         for n in np.arange(self.neuron_count):
-            Q += weights[n][action] * self.input_layer_activity(
-                self.centers[n], state)
-        return Q
-
+            q += weights[n][action] * self.input_layer_activity(
+                self.centers[n])
+        return q
 
     def output_layer_weights(self):
         w = np.ones((self.neuron_count, 3))
-        ### Code to update weights
+        # Code to update weights
         return w
-
-    def _get_state(self):
-        x, x_d = self.mountain_car.MountainCar.get_positions()
-        return [x, x_d]
 
 
 if __name__ == "__main__":
