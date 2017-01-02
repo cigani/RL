@@ -43,12 +43,13 @@ class DummyAgent:
         _x_d_space_, self.phi_centers_distance = np.linspace(-15, 15, neurons,
                                                              retstep=True)
         self.centers = [_x_space_, _x_d_space_]
-        
+
         # Trace Memory
         self.e = np.zeros((neurons, neurons, 3))
-        self.weights = np.zeros((neurons, neurons, 3))
+        self.weights = 0.01 * np.random.rand((neurons, neurons, 3)) + 0.1
 
-        self.activity = {"Forward": 1, "Reverse": -1, "Neutral": 0}
+        self.activity = {"1": 0, "-1": 1, "Neutral": 2}
+        self.action = None
 
     def visualize_trial(self, n_steps=200):
         """Do a trial without learning, with display.
@@ -89,39 +90,45 @@ class DummyAgent:
         # This is your job!
         pass
 
-    def input_layer_activity(self, centers):
-        rj = np.exp(((centers[0] - self.mountain_car.x) ** 2) /
+    def input_layer_activity(self, centers, state_x, state_x_d):
+        rj = np.exp(((centers[0] - state_x) ** 2) /
                     self.x_centers_distance **
                     2 -
-                    ((centers[1] - self.mountain_car.x_d) ** 2) /
+                    ((centers[1] - state_x_d) ** 2) /
                     self.phi_centers_distance
                     ** 2)
         return rj
 
-    def output_layer_activity(self, command):
-        action = self.activity["{}".format(command)]
+    def output_layer_activity(self, action, state):
         weights = self.weights
-        q = 0.0
+        action_index = self.activity["{}".format(action)]
+        q_weights = 0.0
         for n in np.arange(self.neuron_count):
-            q += weights[n][action] * self.input_layer_activity(
-                self.centers[n])
-        return q
+            q_weights += weights[n][action_index] * self.input_layer_activity(
+                self.centers[n], state[0], state[1])
+        return q_weights
+
+    def td_error(self):
+        reward = self.mountain_car.R
+        new_state = [self.x, self.x_d]
+        old_state = [self.old_x, self.old_x_d]
+        self.dirac = reward - (
+            self.output_layer_activity(self.last_action, old_state) -
+            self.gamma_ * self.output_layer_activity(
+                self.action, new_state))
 
     def output_layer_weights(self):
         weights = self.weights
         # Code to update weights
 
     def update_state(self, command):
-        action = self.activity["{}".format(command)]
+        self.last_action = self.action
+        self.action = command
         self.old_x = self.mountain_car.x
         self.old_x_d = self.mountain_car.x_d
-        self.mountain_car.apply_force(action)
+        self.mountain_car.apply_force(self.action)
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
-
-
-
-
 
 
 if __name__ == "__main__":
