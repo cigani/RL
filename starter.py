@@ -10,7 +10,7 @@ class DummyAgent:
     """A not so good agent for the mountain-car task.
     """
 
-    def __init__(self, mountain_car=None, eta=0.1, gamma=0.95, lam=0.01,
+    def __init__(self, mountain_car=None, eta=0.1, gamma=0.95, lam=0.8,
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=10, time=100,
@@ -96,99 +96,98 @@ class DummyAgent:
                     plb.show()
                     plb.pause(0.0001)
 
-                self.learn()
+                self._learn()
                 # check for rewards
                 if self.mountain_car.R > 0.0:
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
 
-    def learn(self):
-        self.action_choice()
+    def _learn(self):
+        self._action_choice()
 
-    def input_layer_activity(self, neuron_index):
+    def _input_layer(self, neuron_index):
         rj = np.exp((-(neuron_index[0] - self.state[0]) ** 2) /
-                    self.x_centers_distance **
-                    2 -
+                    self.x_centers_distance ** 2 -
                     ((neuron_index[1] - self.state[1]) ** 2) /
-                    self.phi_centers_distance
-                    ** 2)
+                    self.phi_centers_distance ** 2)
         return rj
 
-    def output_layer_activity(self, action_index):
+    def _output_layer(self, action_index):
         q_weights = 0.0
         for n in np.arange(self.neuron_count):
             q_weights += (self.weights[n][action_index] *
-                          self.input_layer_activity(self.centers[n]))
+                          self._input_layer(self.centers[n]))
         return q_weights
 
-    def update_eligibility(self):
+    def _update_eligibility(self):
         """
         Eligibility updates using the SARSA protocol.
         """
         action = self.action_index_["{}".format(self.last_action)]
         self.e *= self.lambda_ * self.gamma_
-        self.e[self.old_index, action] += 1
+        self.e[self.old_index, action] += \
+            self._input_layer(self.centers[self.old_index])
 
-    def update_weights(self):
+    def _update_weights(self):
         """
         Weight updates using the SARSA protocol.
         """
-        self.td_error()
+        self._td_error()
         self.weights += self.dirac * self.eta_ * self.e
         self.weights = np.clip(self.weights, -1, 1)
 
-    def td_error(self):
+    def _td_error(self):
         reward = self.mountain_car.R
-        self.dirac = self.eta_ * (reward - (
-            self.output_layer_activity(self.last_action) -
-            self.gamma_ * self.output_layer_activity(
-                self.action)))
+        self.dirac = (reward - (
+            self._output_layer(self.last_action) -
+            self.gamma_ * self._output_layer(self.action)))
 
-    def action_choice(self):
+    def _action_choice(self):
         """
         Choose the next action based on the current Q-values.
         Determined by soft-max rule.
         Cumulative probabilities for quick implementation.
         """
 
-        c_prob_left = self.soft_max_rule(self.activity["Left"])
-        c_prob_right = c_prob_left + self.soft_max_rule(self.activity["Right"])
+        c_prob_left = self._soft_max_rule(self.activity["Left"])
+        c_prob_right = c_prob_left + self._soft_max_rule(
+            self.activity["Right"])
 
         test_value = np.random.rand()
 
         if test_value < c_prob_left:
-            self.update_state(-1)
+            self._update_state(-1)
         elif test_value < c_prob_right:
-            self.update_state(1)
+            self._update_state(1)
         else:
-            self.update_state(0)
+            self._update_state(0)
 
-    def soft_max_rule(self, action):
+    def _soft_max_rule(self, action):
         """
         Soft-max algorithm
         """
-        probability = (np.exp(self.output_layer_activity(action)
+        probability = (np.exp(self._output_layer(action)
                               / self.initial_temperature_)
-                       / self.all_actions())
+                       / self._all_actions())
         return probability
 
-    def all_actions(self):
+    def _all_actions(self):
         """
         For the denominator of the soft-max algorithm
         """
         total_q = 0.0
         for action in self.action_index_.values():
-            total_q += np.exp(self.output_layer_activity(action)
+            total_q += np.exp(self._output_layer(action)
                               / self.initial_temperature_)
         return total_q
 
-    def update_state(self, command):
+    def _update_state(self, command):
         self.last_action = self.action
         self.action = command
         self.old_x = self.mountain_car.x
         self.old_x_d = self.mountain_car.x_d
         self.old_state = [self.old_x, self.old_x_d]
-        self.old_index = self.get_index(self.old_state)
+        self.old_index = self._get_index(self.old_state)
 
         self.mountain_car.apply_force(self.action)
         self.mountain_car.simulate_timesteps(self.time, self.dt)
@@ -196,12 +195,12 @@ class DummyAgent:
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
         self.state = [self.x, self.x_d]
-        self.new_index = self.get_index(self.state)
+        self.new_index = self._get_index(self.state)
 
-        self.update_eligibility()
-        self.update_weights()
+        self._update_eligibility()
+        self._update_weights()
 
-    def get_index(self, state):
+    def _get_index(self, state):
         return (np.array([np.linalg.norm(m + c)
                           for (m, c) in
                           np.abs(self.centers - state)]).argmin())
