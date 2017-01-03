@@ -64,7 +64,7 @@ class DummyAgent:
         self.time = time
         self.dt = dt
 
-    def visualize_trial(self, n_steps=6000, n_episodes=30, visual=False):
+    def visualize_trial(self, n_steps=10000, n_episodes=100, visual=False):
         """Do a trial without learning, with display.
 
         Parameters
@@ -82,8 +82,8 @@ class DummyAgent:
         for k in np.arange(n_episodes):
             self.mountain_car.reset()
             for n in range(n_steps):
-                print('\rt =', self.mountain_car.t),
-                sys.stdout.flush()
+                #print('\rt =', self.mountain_car.t),
+                #sys.stdout.flush()
 
                 # choose a random action
                 #self.mountain_car.apply_force(-1)
@@ -106,7 +106,7 @@ class DummyAgent:
         self.action_choice()
 
     def input_layer_activity(self, neuron_index):
-        rj = np.exp(((neuron_index[0] - self.state[0]) ** 2) /
+        rj = np.exp((-(neuron_index[0] - self.state[0]) ** 2) /
                     self.x_centers_distance **
                     2 -
                     ((neuron_index[1] - self.state[1]) ** 2) /
@@ -168,7 +168,7 @@ class DummyAgent:
         """
         probability = (np.exp(self.output_layer_activity(action)
                               / self.initial_temperature_)
-                       / self.all_actions())
+                       / self.all_actions()/self.initial_temperature_)
         return probability
 
     def all_actions(self):
