@@ -66,7 +66,7 @@ class DummyAgent:
         self.time = time
         self.dt = dt
 
-    def visualize_trial(self, n_steps=10000, n_episodes=300, visual=False):
+    def visualize_trial(self, n_steps=3000, n_episodes=3000, visual=False):
         """Do a trial without learning, with display.
 
         Parameters
