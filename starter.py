@@ -168,7 +168,7 @@ class DummyAgent:
         """
         probability = (np.exp(self.output_layer_activity(action)
                               / self.initial_temperature_)
-                       / self.all_actions()/self.initial_temperature_)
+                       / self.all_actions())
         return probability
 
     def all_actions(self):
@@ -177,7 +177,7 @@ class DummyAgent:
         """
         total_q = 0.0
         for action in self.action_index_.values():
-            total_q += np.exp(self.output_layer_activity(action))
+            total_q += np.exp(self.output_layer_activity(action)/self.initial_temperature_)
         return total_q
 
     def update_state(self, command):
