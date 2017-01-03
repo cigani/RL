@@ -10,10 +10,10 @@ class DummyAgent:
     """A not so good agent for the mountain-car task.
     """
 
-    def __init__(self, mountain_car=None, eta=0.1, gamma=.95, lam=0.0,
+    def __init__(self, mountain_car=None, eta=0.1, gamma=0.95, lam=0.01,
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
-                 temperature_half_life=1.0, neurons=5, time=100,
+                 temperature_half_life=1.0, neurons=10, time=100,
                  dt=0.01, actions=3):
 
         if mountain_car is None:
@@ -58,7 +58,7 @@ class DummyAgent:
 
         # Trace Memory
         self.e = np.zeros((self.neuron_count, actions))
-        self.weights = 0.01 * np.random.rand(self.neuron_count, actions)
+        self.weights = 0.00001 * np.random.rand(self.neuron_count, actions)
 
         # Time step for Simulation
         self.time = time
@@ -73,22 +73,22 @@ class DummyAgent:
         """
 
         # prepare for the visualization
-        #plb.ion()
+        # plb.ion()
         mv = mountaincar.MountainCarViewer(self.mountain_car)
-        #mv.create_figure(n_steps, n_steps)
-        #plb.draw()
+        # mv.create_figure(n_steps, n_steps)
+        # plb.draw()
 
         # make sure the mountain-car is reset
         for k in np.arange(n_episodes):
             self.mountain_car.reset()
             for n in range(n_steps):
-                #print('\rt =', self.mountain_car.t),
-                #sys.stdout.flush()
+                # print('\rt =', self.mountain_car.t),
+                # sys.stdout.flush()
 
                 # choose a random action
-                #self.mountain_car.apply_force(-1)
+                # self.mountain_car.apply_force(-1)
                 # simulate the timestep
-                #self.mountain_car.simulate_timesteps(100, 0.01)
+                # self.mountain_car.simulate_timesteps(100, 0.01)
 
                 # update the visualization
                 if visual:
@@ -121,20 +121,13 @@ class DummyAgent:
                           self.input_layer_activity(self.centers[n]))
         return q_weights
 
-    def td_error(self):
-        reward = self.mountain_car.R
-        self.dirac = reward - (
-            self.output_layer_activity(self.last_action) -
-            self.gamma_ * self.output_layer_activity(
-                self.action))
-
     def update_eligibility(self):
         """
         Eligibility updates using the SARSA protocol.
         """
         action = self.action_index_["{}".format(self.last_action)]
         self.e *= self.lambda_ * self.gamma_
-        self.e[:, action] += 1
+        self.e[self.old_index, action] += 1
 
     def update_weights(self):
         """
@@ -142,6 +135,14 @@ class DummyAgent:
         """
         self.td_error()
         self.weights += self.dirac * self.eta_ * self.e
+        self.weights = np.clip(self.weights, -1, 1)
+
+    def td_error(self):
+        reward = self.mountain_car.R
+        self.dirac = self.eta_ * (reward - (
+            self.output_layer_activity(self.last_action) -
+            self.gamma_ * self.output_layer_activity(
+                self.action)))
 
     def action_choice(self):
         """
@@ -177,7 +178,8 @@ class DummyAgent:
         """
         total_q = 0.0
         for action in self.action_index_.values():
-            total_q += np.exp(self.output_layer_activity(action)/self.initial_temperature_)
+            total_q += np.exp(self.output_layer_activity(action)
+                              / self.initial_temperature_)
         return total_q
 
     def update_state(self, command):
@@ -186,6 +188,7 @@ class DummyAgent:
         self.old_x = self.mountain_car.x
         self.old_x_d = self.mountain_car.x_d
         self.old_state = [self.old_x, self.old_x_d]
+        self.old_index = self.get_index(self.old_state)
 
         self.mountain_car.apply_force(self.action)
         self.mountain_car.simulate_timesteps(self.time, self.dt)
@@ -193,10 +196,18 @@ class DummyAgent:
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
         self.state = [self.x, self.x_d]
+        self.new_index = self.get_index(self.state)
+
         self.update_eligibility()
+        self.update_weights()
+
+    def get_index(self, state):
+        return (np.array([np.linalg.norm(m + c)
+                          for (m, c) in
+                          np.abs(self.centers - state)]).argmin())
 
 
 if __name__ == "__main__":
     d = DummyAgent()
     d.visualize_trial()
-    #plb.show()
+    # plb.show()
