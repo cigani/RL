@@ -47,6 +47,8 @@ class DummyAgent:
                                                              retstep=True)
         self.centers = np.array(list(itertools.product(_x_space_,
                                                        _x_d_space_)))
+        self.x_sigma = self.x_centers_distance **2
+        self.x_d_sigma = self.phi_centers_distance ** 2
 
         # Activity / State Parameters
         self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
@@ -64,7 +66,7 @@ class DummyAgent:
         self.time = time
         self.dt = dt
 
-    def visualize_trial(self, n_steps=10000, n_episodes=100, visual=False):
+    def visualize_trial(self, n_steps=10000, n_episodes=300, visual=False):
         """Do a trial without learning, with display.
 
         Parameters
@@ -74,7 +76,7 @@ class DummyAgent:
 
         # prepare for the visualization
         # plb.ion()
-        mv = mountaincar.MountainCarViewer(self.mountain_car)
+        # mv = mountaincar.MountainCarViewer(self.mountain_car)
         # mv.create_figure(n_steps, n_steps)
         # plb.draw()
 
@@ -107,9 +109,8 @@ class DummyAgent:
 
     def _input_layer(self, neuron_index):
         rj = np.exp((-(neuron_index[0] - self.state[0]) ** 2) /
-                    self.x_centers_distance ** 2 -
-                    ((neuron_index[1] - self.state[1]) ** 2) /
-                    self.phi_centers_distance ** 2)
+                    self.x_sigma - ((neuron_index[1] - self.state[1]) ** 2) /
+                    self.x_d_sigma)
         return rj
 
     def _output_layer(self, action_index):
@@ -201,9 +202,11 @@ class DummyAgent:
         self._update_weights()
 
     def _get_index(self, state):
-        return (np.array([np.linalg.norm(m + c)
-                          for (m, c) in
-                          np.abs(self.centers - state)]).argmin())
+        return np.sum(np.square(np.abs(self.centers - state)), 1).argmin()
+        # Alternative Method. It's MUCH more expensive though
+        # (np.array([np.linalg.norm(m + c)
+        #               for (m, c) in
+        #               np.abs(self.centers - state)]).argmin())
 
 
 if __name__ == "__main__":
