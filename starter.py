@@ -5,6 +5,8 @@ import numpy as np
 import mountaincar
 import itertools
 import h5py
+import time
+from datetime import datetime
 
 
 class DummyAgent:
@@ -75,7 +77,8 @@ class DummyAgent:
         n_steps -- number of steps to simulate for
         """
         # H5 Data Sets #
-        h5data = h5py.File("saved_data_sets.hdf5", 'a')
+        filename="saved_data_sets-%s.hdf5"%datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        h5data = h5py.File(filename, 'w')
         h5data.create_group('episode_rewards')
         h5data.create_group('x_data')
         h5data.create_group('x_dot_data')
@@ -106,21 +109,27 @@ class DummyAgent:
                 self._learn()
                 if self.mountain_car.R > 0.0:
                     np.insert(episode_rewards, _, self.mountain_car.t)
-                    h5data["x_data_{}".format(_)].create_dataset(
-                        "x_data", (3000, 1), maxshape=(None, 1),
-                        data=x_data)
-                    h5data["x_dot_data_{}".format(_)].create_dataset(
-                        "x_dot_data", (3000, 1), maxshape=(None, 1),
-                        data=x_dot_data)
-                    h5data["force_data_{}".format(_)].create_dataset(
-                        "force_data", (3000, 1), maxshape=(None, 1),
-                        data=force_data)
+                    h5data['x_data'].create_dataset(
+                        'x_data_{}'.format(_), (3000, 1), maxshape=(None, 1),
+                        data=x_data,
+                        chunks=True, compression="gzip")
+                    test2 = "x_dot_data_{}".format(_)
+                    h5data['x_dot_data'].create_dataset(
+                        test2 , (3000, 1), maxshape=(None, 1),
+                        data=x_dot_data,
+                        chunks=True, compression="gzip")
+                    test3 = "force_data_{}".format(_)
+                    h5data['force_data'].create_dataset(
+                        test3, (3000, 1), maxshape=(None, 1),
+                        data=force_data,
+                        chunks=True, compression="gzip")
 
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
-        h5data["episode_rewards"].create_dataset("episode_reward",
+        h5data['episode_rewards'].create_dataset('episode_reward',
                                                  (3000, 1), maxshape=(None, 1),
-                                                 data=episode_rewards)
+                                                 data=episode_rewards,
+                                                 chunks=True, compression="gzip")
 
     def _learn(self):
         self._action_choice()
