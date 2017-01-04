@@ -4,6 +4,7 @@ import pylab as plb
 import numpy as np
 import mountaincar
 import itertools
+import h5py
 
 
 class DummyAgent:
@@ -47,7 +48,7 @@ class DummyAgent:
                                                              retstep=True)
         self.centers = np.array(list(itertools.product(_x_space_,
                                                        _x_d_space_)))
-        self.x_sigma = self.x_centers_distance **2
+        self.x_sigma = self.x_centers_distance ** 2
         self.x_d_sigma = self.phi_centers_distance ** 2
 
         # Activity / State Parameters
@@ -73,36 +74,53 @@ class DummyAgent:
         ----------
         n_steps -- number of steps to simulate for
         """
+        # H5 Data Sets #
+        h5data = h5py.File("saved_data_sets.hdf5", 'a')
+        h5data.create_group('episode_rewards')
+        h5data.create_group('x_data')
+        h5data.create_group('x_dot_data')
+        h5data.create_group('force_data')
+
+        episode_rewards = np.zeros(n_episodes)
+        x_data = np.zeros(n_steps)
+        x_dot_data = np.zeros(n_steps)
+        force_data = np.zeros(n_steps)
 
         # prepare for the visualization
-        # plb.ion()
-        # mv = mountaincar.MountainCarViewer(self.mountain_car)
-        # mv.create_figure(n_steps, n_steps)
-        # plb.draw()
+        if visual:
+            plb.ion()
+            mv = mountaincar.MountainCarViewer(self.mountain_car)
+            mv.create_figure(n_steps, n_steps)
+            mv.update_figure()
+            plb.draw()
+            plb.show()
+            plb.pause(0.0001)
 
-        # make sure the mountain-car is reset
-        for k in np.arange(n_episodes):
+        for _ in np.arange(n_episodes):
             self.mountain_car.reset()
             for n in range(n_steps):
-                # print('\rt =', self.mountain_car.t),
-                # sys.stdout.flush()
-
-                # choose a random action
-                # self.mountain_car.apply_force(-1)
-                # simulate the timestep
-                # self.mountain_car.simulate_timesteps(100, 0.01)
-
-                # update the visualization
-                if visual:
-                    mv.update_figure()
-                    plb.show()
-                    plb.pause(0.0001)
+                np.insert(x_data, n, self.mountain_car.x)
+                np.insert(x_dot_data, n, self.mountain_car.x_d)
+                np.insert(force_data, n, self.mountain_car.F)
 
                 self._learn()
-                # check for rewards
                 if self.mountain_car.R > 0.0:
+                    np.insert(episode_rewards, _, self.mountain_car.t)
+                    h5data["x_data_{}".format(_)].create_dataset(
+                        "x_data", (3000, 1), maxshape=(None, 1),
+                        data=x_data)
+                    h5data["x_dot_data_{}".format(_)].create_dataset(
+                        "x_dot_data", (3000, 1), maxshape=(None, 1),
+                        data=x_dot_data)
+                    h5data["force_data_{}".format(_)].create_dataset(
+                        "force_data", (3000, 1), maxshape=(None, 1),
+                        data=force_data)
+
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
+        h5data["episode_rewards"].create_dataset("episode_reward",
+                                                 (3000, 1), maxshape=(None, 1),
+                                                 data=episode_rewards)
 
     def _learn(self):
         self._action_choice()
