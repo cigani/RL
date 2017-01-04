@@ -17,7 +17,7 @@ class DummyAgent:
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=10, time=100,
-                 dt=0.01, actions=3):
+                 dt=0.01, actions=3, n_steps=3000, n_episodes=3000):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -68,8 +68,10 @@ class DummyAgent:
         # Time step for Simulation
         self.time = time
         self.dt = dt
+        self.n_steps = n_steps
+        self.n_episodes = n_episodes
 
-    def visualize_trial(self, n_steps=3000, n_episodes=3000, visual=False):
+    def visualize_trial(self, visual=False):
         """Do a trial without learning, with display.
 
         Parameters
@@ -77,59 +79,59 @@ class DummyAgent:
         n_steps -- number of steps to simulate for
         """
         # H5 Data Sets #
-        filename="saved_data_sets-%s.hdf5"%datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        filename = "saved_data_sets-%s.hdf5" % datetime.now().strftime(
+            '%Y-%m-%d-%H:%M:%S')
         h5data = h5py.File(filename, 'w')
         h5data.create_group('episode_rewards')
         h5data.create_group('x_data')
         h5data.create_group('x_dot_data')
         h5data.create_group('force_data')
 
-        episode_rewards = np.zeros(n_episodes)
-        x_data = np.zeros(n_steps)
-        x_dot_data = np.zeros(n_steps)
-        force_data = np.zeros(n_steps)
+        episode_rewards = np.zeros(self.n_episodes)
+        x_data = np.zeros(self.n_steps)
+        x_dot_data = np.zeros(self.n_steps)
+        force_data = np.zeros(self.n_steps)
 
         # prepare for the visualization
         if visual:
             plb.ion()
             mv = mountaincar.MountainCarViewer(self.mountain_car)
-            mv.create_figure(n_steps, n_steps)
+            mv.create_figure(self.n_steps, self.n_steps)
             mv.update_figure()
             plb.draw()
             plb.show()
             plb.pause(0.0001)
 
-        for _ in np.arange(n_episodes):
+        for _ in np.arange(self.n_episodes):
             self.mountain_car.reset()
-            for n in range(n_steps):
-                np.insert(x_data, n, self.mountain_car.x)
-                np.insert(x_dot_data, n, self.mountain_car.x_d)
-                np.insert(force_data, n, self.mountain_car.F)
-
+            for n in range(self.n_steps):
+                x_data[n] = self.mountain_car.x
+                x_dot_data[n] = self.mountain_car.x_d
+                force_data[n] = self.mountain_car.F
                 self._learn()
                 if self.mountain_car.R > 0.0:
                     np.insert(episode_rewards, _, self.mountain_car.t)
                     h5data['x_data'].create_dataset(
-                        'x_data_{}'.format(_), (3000, 1), maxshape=(None, 1),
-                        data=x_data,
+                        'x_data_{}'.format(_), (self.n_steps, 1),
+                        maxshape=(self.n_steps, 1), data=x_data,
                         chunks=True, compression="gzip")
-                    test2 = "x_dot_data_{}".format(_)
                     h5data['x_dot_data'].create_dataset(
-                        test2 , (3000, 1), maxshape=(None, 1),
-                        data=x_dot_data,
+                        "x_dot_data_{}".format(_), (self.n_steps, 1),
+                        maxshape=(self.n_steps, 1), data=x_dot_data,
                         chunks=True, compression="gzip")
-                    test3 = "force_data_{}".format(_)
                     h5data['force_data'].create_dataset(
-                        test3, (3000, 1), maxshape=(None, 1),
-                        data=force_data,
+                        "force_data_{}".format(_), (self.n_steps, 1),
+                        maxshape=(self.n_steps, 1), data=force_data,
                         chunks=True, compression="gzip")
 
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
         h5data['episode_rewards'].create_dataset('episode_reward',
-                                                 (3000, 1), maxshape=(None, 1),
+                                                 (self.n_episodes, 1),
+                                                 maxshape=(self.n_episodes, 1),
                                                  data=episode_rewards,
-                                                 chunks=True, compression="gzip")
+                                                 chunks=True,
+                                                 compression="gzip")
 
     def _learn(self):
         self._action_choice()
