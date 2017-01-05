@@ -4,6 +4,7 @@ import os
 import glob
 import pickle
 
+
 class Loader:
     def __init__(self):
         self.PATH = os.getcwd()

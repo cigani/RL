@@ -87,3 +87,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+/saved_data_sets-2017-01-04-20:31:49.hdf5
+data-dict
+saved_data_sets-2017-01-04-18:57:18.hdf5
+saved_data_sets-2017-01-04-19:02:00.hdf5

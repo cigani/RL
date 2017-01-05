@@ -5,7 +5,6 @@ import numpy as np
 import mountaincar
 import itertools
 import h5py
-import time
 from datetime import datetime
 
 
@@ -80,7 +79,7 @@ class DummyAgent:
         """
         # H5 Data Sets #
         filename = "saved_data_sets-%s.hdf5" % datetime.now().strftime(
-            '%Y-%m-%d-%H:%M:%S')
+            '%m-%d-%H.%M.%S')
         h5data = h5py.File(filename, 'w')
         h5data.create_group('episode_rewards')
         h5data.create_group('x_data')
