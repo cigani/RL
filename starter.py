@@ -7,7 +7,6 @@ import itertools
 import h5py
 from datetime import datetime
 
-
 class DummyAgent:
     """A not so good agent for the mountain-car task.
     """
@@ -16,7 +15,7 @@ class DummyAgent:
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=10, time=100,
-                 dt=0.01, actions=3, n_steps=3000, n_episodes=3000):
+                 dt=0.01, actions=3, n_steps=10000, n_episodes=350):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -236,8 +235,10 @@ class DummyAgent:
         #               for (m, c) in
         #               np.abs(self.centers - state)]).argmin())
 
-
 if __name__ == "__main__":
-    d = DummyAgent()
-    d.visualize_trial()
-    # plb.show()
+    t = 0
+    while t < 10:
+        d = DummyAgent()
+        d.visualize_trial()
+        # plb.show()
+        t+=1
