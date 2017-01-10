@@ -7,6 +7,7 @@ import itertools
 import h5py
 from datetime import datetime
 
+
 class DummyAgent:
     """A not so good agent for the mountain-car task.
     """
@@ -15,7 +16,9 @@ class DummyAgent:
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=10, time=100,
-                 dt=0.01, actions=3, n_steps=10000, n_episodes=350):
+                 dt=0.01, actions=3, n_steps=5000, n_episodes=350,
+                 run_type="Default", explore_temp=False, explore_lam=False,
+                 explore_both=False, explore_weights=False, weights=.05):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -58,16 +61,30 @@ class DummyAgent:
         self.action = 0
         self.old_state = None
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
+        self.q_weights = 0.0
+        self.hold = np.zeros(3)
 
         # Trace Memory
         self.e = np.zeros((self.neuron_count, actions))
         self.weights = 0.00001 * np.random.rand(self.neuron_count, actions)
+        if explore_weights:
+            self.weights = np.ones(self.neuron_count, actions) * weights
 
         # Time step for Simulation
         self.time = time
         self.dt = dt
         self.n_steps = n_steps
         self.n_episodes = n_episodes
+
+        # Exploration
+        self.explore_temp = explore_temp
+        self.explore_lam = explore_lam
+        self.explore_both = explore_both
+
+        # Save Data
+        self.filename = "{0}-{1}s.hdf5".format(run_type,
+                                               datetime.now().strftime(
+                                                   '%m-%d-%H.%M.%S'))
 
     def visualize_trial(self, visual=False):
         """Do a trial without learning, with display.
@@ -77,18 +94,18 @@ class DummyAgent:
         n_steps -- number of steps to simulate for
         """
         # H5 Data Sets #
-        filename = "saved_data_sets-%s.hdf5" % datetime.now().strftime(
-            '%m-%d-%H.%M.%S')
-        h5data = h5py.File(filename, 'w')
+        h5data = h5py.File(self.filename, 'w')
         h5data.create_group('episode_rewards')
         h5data.create_group('x_data')
         h5data.create_group('x_dot_data')
         h5data.create_group('force_data')
+        h5data.create_group('q_data')
 
         episode_rewards = np.zeros(self.n_episodes)
         x_data = np.zeros(self.n_steps)
         x_dot_data = np.zeros(self.n_steps)
         force_data = np.zeros(self.n_steps)
+        q_data = np.zeros((self.n_steps, 3))
 
         # prepare for the visualization
         if visual:
@@ -102,10 +119,20 @@ class DummyAgent:
 
         for _ in np.arange(self.n_episodes):
             self.mountain_car.reset()
+            if self.explore_temp:
+                self.initial_temperature_ = self._time_decay(
+                    self.initial_temperature_, _)
+            if self.explore_lam:
+                self.lambda_ = self._time_decay(self.lambda_, _)
+            if self.explore_both:
+                self.initial_temperature_ = self._time_decay(
+                    self.initial_temperature_, _)
+                self.lambda_ = self._time_decay(self.lambda_, _)
             for n in range(self.n_steps):
                 x_data[n] = self.mountain_car.x
                 x_dot_data[n] = self.mountain_car.x_d
                 force_data[n] = self.mountain_car.F
+                q_data[n] = self.hold
                 self._learn()
                 if self.mountain_car.R > 0.0:
                     np.insert(episode_rewards, _, self.mountain_car.t)
@@ -120,6 +147,10 @@ class DummyAgent:
                     h5data['force_data'].create_dataset(
                         "force_data_{}".format(_), (self.n_steps, 1),
                         maxshape=(self.n_steps, 1), data=force_data,
+                        chunks=True, compression="gzip")
+                    h5data['q_data'].create_dataset(
+                        "q_data_{}".format(_), (self.n_steps, 3),
+                        maxshape=(self.n_steps, 3), data=q_data,
                         chunks=True, compression="gzip")
 
                     print("\rreward obtained at t = ", self.mountain_car.t)
@@ -141,11 +172,12 @@ class DummyAgent:
         return rj
 
     def _output_layer(self, action_index):
-        q_weights = 0.0
+        self.q_weights = 0.0
         for n in np.arange(self.neuron_count):
-            q_weights += (self.weights[n][action_index] *
-                          self._input_layer(self.centers[n]))
-        return q_weights
+            self.q_weights += (self.weights[n][action_index] *
+                               self._input_layer(self.centers[n]))
+        self.hold[action_index] = self.q_weights
+        return self.q_weights
 
     def _update_eligibility(self):
         """
@@ -235,10 +267,29 @@ class DummyAgent:
         #               for (m, c) in
         #               np.abs(self.centers - state)]).argmin())
 
+    def _time_decay(self, val, time):
+        mada = (self.n_episodes * 0.33) / np.log(val + 0.00000000001)
+        return val * np.exp(-time / mada)
+
+
 if __name__ == "__main__":
-    t = 0
-    while t < 10:
-        d = DummyAgent()
-        d.visualize_trial()
-        # plb.show()
-        t+=1
+    d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_temp=True, run_type="explore_temp", n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_both=True, run_type="explore_both", n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_weights=True, weights=0.0,
+                   run_type="zero_weight", n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_weights=True, weights=1.0, run_type="one_weight",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
+    d.visualize_trial()
