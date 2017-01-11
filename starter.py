@@ -66,9 +66,11 @@ class DummyAgent:
 
         # Trace Memory
         self.e = np.zeros((self.neuron_count, actions))
-        self.weights = 0.00001 * np.random.rand(self.neuron_count, actions)
+        if not explore_weights:
+            self.weights = 0.00001 * np.random.rand(self.neuron_count,
+                                                    actions)
         if explore_weights:
-            self.weights = np.ones(self.neuron_count, actions) * weights
+            self.weights = np.ones((self.neuron_count, actions)) * weights
 
         # Time step for Simulation
         self.time = time
@@ -273,12 +275,14 @@ class DummyAgent:
 
 
 if __name__ == "__main__":
-    d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
-    d.visualize_trial()
-    d = DummyAgent(explore_temp=True, run_type="explore_temp", n_episodes=150)
-    d.visualize_trial()
-    d = DummyAgent(explore_both=True, run_type="explore_both", n_episodes=150)
-    d.visualize_trial()
+    # d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
+    # d.visualize_trial()
+    # d = DummyAgent(explore_temp=True, run_type="explore_temp",
+    # n_episodes=150)
+    # d.visualize_trial()
+    # d = DummyAgent(explore_both=True, run_type="explore_both",
+    # n_episodes=150)
+    # d.visualize_trial()
     d = DummyAgent(explore_weights=True, weights=0.0,
                    run_type="zero_weight", n_episodes=150)
     d.visualize_trial()
