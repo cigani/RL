@@ -266,27 +266,30 @@ class DummyAgent:
 
 
 if __name__ == "__main__":
-    d = DummyAgent(run_type="default", n_episodes=2)
+    t = 0
+    while t < 10:
+        d = DummyAgent(run_type="default", n_episodes=150)
+        d.visualize_trial()
+        t += 1
+    d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
     d.visualize_trial()
-    # d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(explore_temp=True, run_type="explore_temp",
-    # n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(explore_both=True, run_type="explore_both",
-    # n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(explore_weights=True, weights=0.0,
-    #                run_type="zero_weight", n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(explore_weights=True, weights=1.0, run_type="one_weight",
-    #                n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
-    #                n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
-    #                n_episodes=150)
-    # d.visualize_trial()
-    # d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
-    # d.visualize_trial()
+    d = DummyAgent(explore_temp=True, run_type="explore_temp",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_both=True, run_type="explore_both",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_weights=True, weights=0.0,
+                   run_type="zero_weight", n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(explore_weights=True, weights=1.0, run_type="one_weight",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
+                   n_episodes=150)
+    d.visualize_trial()
+    d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
+    d.visualize_trial()
