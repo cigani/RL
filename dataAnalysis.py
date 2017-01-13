@@ -16,6 +16,7 @@ class Loader:
         self.data_dict = {}
 
     def load_data(self):
+        print(self.PATH)
         self._start()
 
     def _start(self):
@@ -25,4 +26,16 @@ class Loader:
                     for val_index, val in enumerate(f['{}'.format(key)]):
                         self.data_dict['{}'.format(val)] = \
                             np.array(f['{}'.format(key)]['{}'.format(val)])
-        pickle.dump(self.data_dict, open("data-dict", "wb"))
+
+        pickle.dump(self.data_dict, open("data-dict", "wb", ), protocol=2)
+
+    def view_pickle(self):
+        ''' Do whatever you need in here this should be a cleaner way to
+        view the data set for you though'''
+        pickle_view = pickle.load(open("{0}/data-dict".format(self.PATH)),
+                                  "rb")
+
+
+
+m = Loader()
+m.load_data()
