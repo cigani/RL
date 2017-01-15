@@ -8,6 +8,40 @@ import h5py
 from datetime import datetime
 
 
+def _generate_data_save(episode_count, episode_rewards, force_data, h5data,
+                        step_count, q_data, x_data, x_dot_data):
+    episode_rewards = np.append(episode_rewards, step_count)
+    h5data['x_data'].create_dataset(
+        'x_data_{}'.format(episode_count), data=x_data, compression="gzip")
+    h5data['x_dot_data'].create_dataset(
+        "x_dot_data_{}".format(episode_count), data=x_dot_data,
+        compression="gzip")
+    h5data['force_data'].create_dataset(
+        "force_data_{}".format(episode_count), data=force_data,
+        compression="gzip")
+    h5data['q_data'].create_dataset(
+        "q_data_{}".format(episode_count), data=q_data, compression="gzip")
+    return episode_rewards
+
+
+def _generate_data_fields():
+    x_data = []
+    x_dot_data = []
+    force_data = []
+    q_data = []
+    return force_data, q_data, x_data, x_dot_data
+
+
+def _generate_data_sets(filename):
+    h5data = h5py.File(filename, 'w')
+    h5data.create_group('episode_rewards')
+    h5data.create_group('x_data')
+    h5data.create_group('x_dot_data')
+    h5data.create_group('force_data')
+    h5data.create_group('q_data')
+    return h5data
+
+
 class DummyAgent:
     """A not so good agent for the mountain-car task.
     """
@@ -88,21 +122,10 @@ class DummyAgent:
                                                datetime.now().strftime(
                                                    '%m-%d-%H.%M.%S'))
 
-    def visualize_trial(self, visual=False):
-        """Do a trial without learning, with display.
+    def intiate_trial(self, visual=False):
 
-        Parameters
-        ----------
-        n_steps -- number of steps to simulate for
-        """
         # H5 Data Sets #
-        h5data = h5py.File(self.filename, 'w')
-        h5data.create_group('episode_rewards')
-        h5data.create_group('x_data')
-        h5data.create_group('x_dot_data')
-        h5data.create_group('force_data')
-        h5data.create_group('q_data')
-
+        h5data = _generate_data_sets(self.filename)
         episode_rewards = []
 
         # prepare for the visualization
@@ -115,45 +138,56 @@ class DummyAgent:
             plb.show()
             plb.pause(0.0001)
 
-        for _ in np.arange(self.n_episodes):
-            x_data = []
-            x_dot_data = []
-            force_data = []
-            q_data = []
+        for episode_count in np.arange(self.n_episodes):
+            force_data, q_data, x_data, x_dot_data = \
+                _generate_data_fields()
             self.mountain_car.reset()
-            if self.explore_temp:
-                self.initial_temperature_ = self._time_decay(
-                    self.initial_temperature_, _)
-            if self.explore_lam:
-                self.lambda_ = self._time_decay(self.lambda_, _)
-            if self.explore_both:
-                self.initial_temperature_ = self._time_decay(
-                    self.initial_temperature_, _)
-                self.lambda_ = self._time_decay(self.lambda_, _)
-            for n in range(self.n_steps):
-                x_data = np.append(x_data, self.mountain_car.x)
-                x_dot_data = np.append(x_dot_data, self.mountain_car.x_d)
-                force_data = np.append(force_data, self.mountain_car.F)
-                q_data = np.append(q_data, self.hold)
+            self._parameter_settings(episode_count)
+            for step_count in range(self.n_steps):
+                force_data, q_data, x_data, x_dot_data = \
+                    self._generate_data_vectors(force_data, q_data, x_data,
+                                                x_dot_data)
                 self._learn()
                 if self.mountain_car.R > 0.0:
-                    episode_rewards = np.append(episode_rewards, n)
-                    h5data['x_data'].create_dataset(
-                        'x_data_{}'.format(_), data=x_data, compression="gzip")
-                    h5data['x_dot_data'].create_dataset(
-                        "x_dot_data_{}".format(_), data=x_dot_data,
-                        compression="gzip")
-                    h5data['force_data'].create_dataset(
-                        "force_data_{}".format(_), data=force_data,
-                        compression="gzip")
-                    h5data['q_data'].create_dataset(
-                        "q_data_{}".format(_), data=q_data, compression="gzip")
-
+                    episode_rewards = _generate_data_save(
+                        episode_count,
+                        episode_rewards,
+                        force_data,
+                        h5data, step_count,
+                        q_data, x_data,
+                        x_dot_data)
                     print("\rreward obtained at t = ", self.mountain_car.t)
+                    break
+                if step_count == self.n_steps - 1:
+                    episode_rewards = _generate_data_save(
+                        episode_count,
+                        episode_rewards,
+                        force_data,
+                        h5data, step_count,
+                        q_data, x_data,
+                        x_dot_data)
                     break
         h5data['episode_rewards'].create_dataset('episode_reward',
                                                  data=episode_rewards,
                                                  compression="gzip")
+
+    def _generate_data_vectors(self, force_data, q_data, x_data, x_dot_data):
+        x_data = np.append(x_data, self.mountain_car.x)
+        x_dot_data = np.append(x_dot_data, self.mountain_car.x_d)
+        force_data = np.append(force_data, self.mountain_car.F)
+        q_data = np.append(q_data, self.hold)
+        return force_data, q_data, x_data, x_dot_data
+
+    def _parameter_settings(self, episode_count):
+        if self.explore_temp:
+            self.initial_temperature_ = self._time_decay(
+                self.initial_temperature_, episode_count)
+        if self.explore_lam:
+            self.lambda_ = self._time_decay(self.lambda_, episode_count)
+        if self.explore_both:
+            self.initial_temperature_ = self._time_decay(
+                self.initial_temperature_, episode_count)
+            self.lambda_ = self._time_decay(self.lambda_, episode_count)
 
     def _learn(self):
         self._action_choice()
@@ -267,29 +301,31 @@ class DummyAgent:
 
 if __name__ == "__main__":
     t = 0
-    while t < 10:
-        d = DummyAgent(run_type="default", n_episodes=150)
-        d.visualize_trial()
+    while t < 1:
+        d = DummyAgent(run_type="default", n_episodes=3)
+        d.intiate_trial()
         t += 1
-    d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=150)
-    d.visualize_trial()
+    d = DummyAgent(explore_lam=True, run_type="explore_lam",
+                   n_episodes=150)
+    d.intiate_trial()
     d = DummyAgent(explore_temp=True, run_type="explore_temp",
                    n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
     d = DummyAgent(explore_both=True, run_type="explore_both",
                    n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
     d = DummyAgent(explore_weights=True, weights=0.0,
                    run_type="zero_weight", n_episodes=150)
-    d.visualize_trial()
-    d = DummyAgent(explore_weights=True, weights=1.0, run_type="one_weight",
+    d.intiate_trial()
+    d = DummyAgent(explore_weights=True, weights=1.0,
+                   run_type="one_weight",
                    n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
     d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
                    n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
     d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
                    n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
     d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
-    d.visualize_trial()
+    d.intiate_trial()
