@@ -1,45 +1,11 @@
-import sys
-
-import pylab as plb
-import numpy as np
-import mountaincar
 import itertools
-import h5py
 from datetime import datetime
 
+import numpy as np
+import pylab as plb
 
-def _generate_data_save(episode_count, episode_rewards, force_data, h5data,
-                        step_count, q_data, x_data, x_dot_data):
-    episode_rewards = np.append(episode_rewards, step_count)
-    h5data['x_data'].create_dataset(
-        'x_data_{}'.format(episode_count), data=x_data, compression="gzip")
-    h5data['x_dot_data'].create_dataset(
-        "x_dot_data_{}".format(episode_count), data=x_dot_data,
-        compression="gzip")
-    h5data['force_data'].create_dataset(
-        "force_data_{}".format(episode_count), data=force_data,
-        compression="gzip")
-    h5data['q_data'].create_dataset(
-        "q_data_{}".format(episode_count), data=q_data, compression="gzip")
-    return episode_rewards
-
-
-def _generate_data_fields():
-    x_data = []
-    x_dot_data = []
-    force_data = []
-    q_data = []
-    return force_data, q_data, x_data, x_dot_data
-
-
-def _generate_data_sets(filename):
-    h5data = h5py.File(filename, 'w')
-    h5data.create_group('episode_rewards')
-    h5data.create_group('x_data')
-    h5data.create_group('x_dot_data')
-    h5data.create_group('force_data')
-    h5data.create_group('q_data')
-    return h5data
+import mountaincar
+import dataSets
 
 
 class DummyAgent:
@@ -125,7 +91,7 @@ class DummyAgent:
     def intiate_trial(self, visual=False):
 
         # H5 Data Sets #
-        h5data = _generate_data_sets(self.filename)
+        h5data = dataSets._generate_data_sets(self.filename)
         episode_rewards = []
 
         # prepare for the visualization
@@ -140,7 +106,7 @@ class DummyAgent:
 
         for episode_count in np.arange(self.n_episodes):
             force_data, q_data, x_data, x_dot_data = \
-                _generate_data_fields()
+                dataSets._generate_data_fields()
             self.mountain_car.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
@@ -149,7 +115,7 @@ class DummyAgent:
                                                 x_dot_data)
                 self._learn()
                 if self.mountain_car.R > 0.0:
-                    episode_rewards = _generate_data_save(
+                    episode_rewards = dataSets._generate_data_save(
                         episode_count,
                         episode_rewards,
                         force_data,
@@ -159,13 +125,15 @@ class DummyAgent:
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
                 if step_count == self.n_steps - 1:
-                    episode_rewards = _generate_data_save(
+                    episode_rewards = dataSets._generate_data_save(
                         episode_count,
                         episode_rewards,
                         force_data,
                         h5data, step_count,
                         q_data, x_data,
                         x_dot_data)
+                    print("\rreward <<NOT>> obtained at t = ",
+                          self.mountain_car.t)
                     break
         h5data['episode_rewards'].create_dataset('episode_reward',
                                                  data=episode_rewards,
@@ -275,15 +243,12 @@ class DummyAgent:
         self.old_x_d = self.mountain_car.x_d
         self.old_state = [self.old_x, self.old_x_d]
         self.old_index = self._get_index(self.old_state)
-
         self.mountain_car.apply_force(self.action)
         self.mountain_car.simulate_timesteps(self.time, self.dt)
-
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
         self.state = [self.x, self.x_d]
         self.new_index = self._get_index(self.state)
-
         self._update_eligibility()
         self._update_weights()
 
@@ -301,31 +266,32 @@ class DummyAgent:
 
 if __name__ == "__main__":
     t = 0
-    while t < 1:
-        d = DummyAgent(run_type="default", n_episodes=3)
+    while t < 5:
+        d = DummyAgent(run_type="100_neuron_default", n_episodes=250,
+                       neurons=100)
         d.intiate_trial()
         t += 1
-    d = DummyAgent(explore_lam=True, run_type="explore_lam",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(explore_temp=True, run_type="explore_temp",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(explore_both=True, run_type="explore_both",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(explore_weights=True, weights=0.0,
-                   run_type="zero_weight", n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(explore_weights=True, weights=1.0,
-                   run_type="one_weight",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
-                   n_episodes=150)
-    d.intiate_trial()
-    d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
-    d.intiate_trial()
+    # d = DummyAgent(explore_lam=True, run_type="explore_lam",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(explore_temp=True, run_type="explore_temp",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(explore_both=True, run_type="explore_both",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(explore_weights=True, weights=0.0,
+    #                run_type="zero_weight", n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(explore_weights=True, weights=1.0,
+    #                run_type="one_weight",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
+    #                n_episodes=150)
+    # d.intiate_trial()
+    # d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
+    # d.intiate_trial()
