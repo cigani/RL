@@ -88,7 +88,7 @@ class DummyAgent:
                                                datetime.now().strftime(
                                                    '%m-%d-%H.%M.%S'))
 
-    def intiate_trial(self, visual=False):
+    def initiate_trial(self, visual=False):
 
         # H5 Data Sets #
         h5data = dataSets.generate_data_sets(self.filename)
@@ -269,29 +269,29 @@ if __name__ == "__main__":
     while t < 5:
         d = DummyAgent(run_type="100_neuron_default", n_episodes=250,
                        neurons=100)
-        d.intiate_trial()
+        d.initiate_trial()
         t += 1
     # d = DummyAgent(explore_lam=True, run_type="explore_lam",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(explore_temp=True, run_type="explore_temp",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(explore_both=True, run_type="explore_both",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(explore_weights=True, weights=0.0,
     #                run_type="zero_weight", n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(explore_weights=True, weights=1.0,
     #                run_type="one_weight",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(initial_temperature=0.0, run_type="zero_temp",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
     #                n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
     # d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=150)
-    # d.intiate_trial()
+    # d.initiate_trial()
