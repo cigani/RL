@@ -91,7 +91,7 @@ class DummyAgent:
     def intiate_trial(self, visual=False):
 
         # H5 Data Sets #
-        h5data = dataSets._generate_data_sets(self.filename)
+        h5data = dataSets.generate_data_sets(self.filename)
         episode_rewards = []
 
         # prepare for the visualization
@@ -106,7 +106,7 @@ class DummyAgent:
 
         for episode_count in np.arange(self.n_episodes):
             force_data, q_data, x_data, x_dot_data = \
-                dataSets._generate_data_fields()
+                dataSets.generate_data_fields()
             self.mountain_car.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
@@ -115,7 +115,7 @@ class DummyAgent:
                                                 x_dot_data)
                 self._learn()
                 if self.mountain_car.R > 0.0:
-                    episode_rewards = dataSets._generate_data_save(
+                    episode_rewards = dataSets.generate_data_save(
                         episode_count,
                         episode_rewards,
                         force_data,
@@ -125,7 +125,7 @@ class DummyAgent:
                     print("\rreward obtained at t = ", self.mountain_car.t)
                     break
                 if step_count == self.n_steps - 1:
-                    episode_rewards = dataSets._generate_data_save(
+                    episode_rewards = dataSets.generate_data_save(
                         episode_count,
                         episode_rewards,
                         force_data,
