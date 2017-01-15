@@ -4,8 +4,9 @@ from datetime import datetime
 import numpy as np
 import pylab as plb
 
-import mountaincar
 import dataSets
+import mountaincar
+from dataSets import generate_data_vectors
 
 
 class DummyAgent:
@@ -89,11 +90,9 @@ class DummyAgent:
                                                    '%m-%d-%H.%M.%S'))
 
     def initiate_trial(self, visual=False):
-
         # H5 Data Sets #
         h5data = dataSets.generate_data_sets(self.filename)
         episode_rewards = []
-
         # prepare for the visualization
         if visual:
             plb.ion()
@@ -103,38 +102,27 @@ class DummyAgent:
             plb.draw()
             plb.show()
             plb.pause(0.0001)
-
         for episode_count in np.arange(self.n_episodes):
             force_data, q_data, x_data, x_dot_data = \
                 dataSets.generate_data_fields()
             self.mountain_car.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
-                force_data, q_data, x_data, x_dot_data = \
-                    self._generate_data_vectors(force_data, q_data, x_data,
-                                                x_dot_data)
+                force_data, q_data, x_data, x_dot_data = generate_data_vectors(
+                    force_data, q_data, x_data, x_dot_data,
+                    self.mountain_car.x, self.mountain_car.x_d,
+                    self.mountain_car.F, self.hold)
                 self._learn()
                 if self.mountain_car.R > 0.0 or step_count == self.n_steps - 1:
                     episode_rewards = dataSets.generate_data_save(
-                        episode_count,
-                        episode_rewards,
-                        force_data,
-                        h5data, step_count,
-                        q_data, x_data,
-                        x_dot_data)
+                        episode_count, episode_rewards, force_data, h5data,
+                        step_count, q_data, x_data, x_dot_data)
                     print("\rreward <maybe> obtained at t = ",
                           self.mountain_car.t)
                     break
         h5data['episode_rewards'].create_dataset('episode_reward',
                                                  data=episode_rewards,
                                                  compression="gzip")
-
-    def _generate_data_vectors(self, force_data, q_data, x_data, x_dot_data):
-        x_data = np.append(x_data, self.mountain_car.x)
-        x_dot_data = np.append(x_dot_data, self.mountain_car.x_d)
-        force_data = np.append(force_data, self.mountain_car.F)
-        q_data = np.append(q_data, self.hold)
-        return force_data, q_data, x_data, x_dot_data
 
     def _parameter_settings(self, episode_count):
         if self.explore_temp:

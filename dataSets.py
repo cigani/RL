@@ -34,3 +34,12 @@ def generate_data_sets(filename):
     h5data.create_group('force_data')
     h5data.create_group('q_data')
     return h5data
+
+
+def generate_data_vectors(force_data, q_data, x_data, x_dot_data,
+                          x, x_d, f, hold):
+    x_data = np.append(x_data, x)
+    x_dot_data = np.append(x_dot_data, x_d)
+    force_data = np.append(force_data, f)
+    q_data = np.append(q_data, hold)
+    return force_data, q_data, x_data, x_dot_data
