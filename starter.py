@@ -6,7 +6,6 @@ import pylab as plb
 
 import dataSets
 import mountaincar
-#from dataSets import generate_data_vectors
 
 
 class DummyAgent:
@@ -63,7 +62,7 @@ class DummyAgent:
         self.action = 0
         self.old_state = None
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
-        #self.hold = np.zeros(3)
+        # self.hold = np.zeros(3)
 
         # Trace Memory
         self.e = np.zeros((self.neuron_count, actions))
@@ -93,9 +92,7 @@ class DummyAgent:
     def initiate_trial(self, visual=False):
         # H5 Data Sets #
         h5data = dataSets.generate_data_sets(self.filename, self.centers)
-
         time_to_reward = [0]
-        
         # prepare for the visualization
         if visual:
             plb.ion()
@@ -104,44 +101,38 @@ class DummyAgent:
             mv.create_figure(self.n_steps, self.n_steps)
             plb.show()
         for episode_count in np.arange(self.n_episodes):
-            #force_data, q_data, x_data, x_dot_data = \
-            #    dataSets.generate_data_fields()
             self.mountain_car.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
-                print
-                print "Episode "+str(episode_count)+" | "+"Step count "+str(step_count)
-                print self.state
-                #force_data, q_data, x_data, x_dot_data = generate_data_vectors(
-                #    force_data, q_data, x_data, x_dot_data,
-                #    self.mountain_car.x, self.mountain_car.x_d,
-                #    self.mountain_car.F, self.hold)
                 self._learn()
-                
                 if visual:
                     # update the visualization
                     mv.update_figure()
                     plb.show()
                     plb.pause(0.0001)
-                if self.mountain_car.R > 0.0:
+                if self.mountain_car.R > 0.0 or step_count == self.n_steps - 1:
                     print("\rreward obtained at t = ",
-                          self.mountain_car.t)
+                          self.mountain_car.t, "\treward of: ",
+                          self.mountain_car.R)
                     break
             time_to_reward[0] = self.mountain_car.t
-            #dataSets.generate_data_save(h5data, episode_count, x_data, x_dot_data, force_data, q_data, time_to_reward, self.weights)
-            dataSets.generate_data_save(h5data, episode_count, time_to_reward, self.weights)
-                
+            dataSets.generate_data_save(h5data, episode_count, time_to_reward,
+                                        self.weights)
 
     def _parameter_settings(self, episode_count):
         if self.explore_temp:
             self.initial_temperature_ = self._time_decay(
-                self.initial_temperature_, episode_count, self.min_temperature_)
+                self.initial_temperature_, episode_count,
+                self.min_temperature_)
         if self.explore_lam:
-            self.lambda_ = self._time_decay(self.lambda_, episode_count, self.min_lambda_)
+            self.lambda_ = self._time_decay(self.lambda_, episode_count,
+                                            self.min_lambda_)
         if self.explore_both:
             self.initial_temperature_ = self._time_decay(
-                self.initial_temperature_, episode_count, self.min_temperature_)
-            self.lambda_ = self._time_decay(self.lambda_, episode_count, self.min_lambda_)
+                self.initial_temperature_, episode_count,
+                self.min_temperature_)
+            self.lambda_ = self._time_decay(self.lambda_, episode_count,
+                                            self.min_lambda_)
 
     def _learn(self):
         self._action_choice()
@@ -157,7 +148,7 @@ class DummyAgent:
         for n in np.arange(self.neuron_count):
             q_weights += (self.weights[n][action_index] *
                           self._input_layer(self.centers[n]))
-        #self.hold[action_index] = q_weights
+        # self.hold[action_index] = q_weights
         return q_weights
 
     def _update_eligibility(self):
@@ -166,7 +157,7 @@ class DummyAgent:
         """
         action = self.action_index_["{}".format(self.last_action)]
         self.e *= self.lambda_ * self.gamma_
-        #self.e[self.old_index, action] += \
+        # self.e[self.old_index, action] += \
         #        self._input_layer(self.centers[self.old_index])
         for i in np.arange(self.neuron_count):
             self.e[i, action] += self._input_layer(self.centers[i])
@@ -178,15 +169,15 @@ class DummyAgent:
         self._td_error()
         self.weights += self.dirac * self.eta_ * self.e
         self._normalize_weights()
-        #self.weights = np.clip(self.weights, -1, 1)
+        # self.weights = np.clip(self.weights, -1, 1)
 
     def _normalize_weights(self):
         un_weights = self.weights
         for i in np.arange(self.neuron_count):
             norm = np.sqrt(np.sum(np.square(un_weights[i])))
-            #norm = np.linalg.norm(un_weights[i], ord=2)
-            self.weights[i] = un_weights[i]/norm
-        
+            # norm = np.linalg.norm(un_weights[i], ord=2)
+            self.weights[i] = un_weights[i] / norm
+
     def _td_error(self):
         reward = self.mountain_car.R
         index_last_action = self.action_index_["{}".format(self.last_action)]
@@ -206,27 +197,26 @@ class DummyAgent:
         c_prob_left = c_prob_right + self._soft_max_rule(self.activity["Left"])
         test_value = np.random.rand()
 
-        print "right_p = "+str(c_prob_right)
-        print "left_p  = "+str(c_prob_left-c_prob_right)
-        print "neutral = "+str(1-c_prob_left)
+        # print("right_p = " + str(c_prob_right))
+        # print("left_p  = " + str(c_prob_left - c_prob_right))
+        # print("neutral = " + str(1 - c_prob_left))
 
         if test_value < c_prob_right:
-            print "RIGHT!"
+            # print("RIGHT!")
             self._update_state(1)
         elif test_value < c_prob_left:
-            print "LEFT!"
+            # print("LEFT!")
             self._update_state(-1)
         else:
-            print "neutral..."
+            # print("neutral...")
             self._update_state(0)
-            
 
     def _soft_max_rule(self, action_index):
         """
         Soft-max algorithm
         """
         if self.initial_temperature_ == np.inf:
-            probability = 1/3
+            probability = 1 / 3
             return probability
         else:
             probability = (np.exp(self._output_layer(action_index)
@@ -268,63 +258,57 @@ class DummyAgent:
         #               np.abs(self.centers - state)]).argmin())
 
     def _time_decay(self, val, episode_count, min_val):
-        return np.max(val * np.exp(-float(episode_count)/float(self.n_episodes)), min_val)
+        return np.max(
+            val * np.exp(-float(episode_count) / float(self.n_episodes)),
+            min_val)
+
 
 if __name__ == "__main__":
     t = 0
     while t < 1:
-        d = DummyAgent(run_type="test", n_episodes=50, n_steps=10000,\
+        d = DummyAgent(run_type="test", n_episodes=2, n_steps=10000,
                        neurons=10, eta=0.1, initial_temperature=1.0)
-        d.initiate_trial(visual=True)
+        d.initiate_trial(visual=False)
         t += 1
 
-    exit()
-    
-    t = 0
-    while t < 10:
-        d = DummyAgent(run_type="default",\
-                       n_episodes=100, n_steps=10000,\
-                       neurons=10, eta=0.1, initial_temperature=1.0)
-        d.initiate_trial()
-        t += 1
-        
-    d = DummyAgent(explore_lam=True, run_type="explore_lam",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-    
-    d = DummyAgent(explore_temp=True, run_type="explore_temp",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-    
-    d = DummyAgent(explore_both=True, run_type="explore_both",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-    
-    d = DummyAgent(explore_weights=True, weights=0.0,\
-                   run_type="zero_weight",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-    
-    d = DummyAgent(explore_weights=True, weights=1.0, run_type="one_weight",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-
-    d = DummyAgent(initial_temperature=0.0001, run_type="zero_temp",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-
-    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
-    
-    d = DummyAgent(lam=0.0, run_type="zero_lambda",\
-                   n_episodes=100, n_steps=10000,\
-                   neurons=10, eta=0.05)
-    d.initiate_trial()
+        # d = DummyAgent(explore_lam=True, run_type="explore_lam",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(explore_temp=True, run_type="explore_temp",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(explore_both=True, run_type="explore_both",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(explore_weights=True, weights=0.0,\
+        #                run_type="zero_weight",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(explore_weights=True, weights=1.0,
+        # run_type="one_weight",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(initial_temperature=0.0001, run_type="zero_temp",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
+        #
+        # d = DummyAgent(lam=0.0, run_type="zero_lambda",\
+        #                n_episodes=100, n_steps=10000,\
+        #                neurons=10, eta=0.05)
+        # d.initiate_trial()
