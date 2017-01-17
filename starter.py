@@ -137,17 +137,22 @@ class DummyAgent:
     def _learn(self):
         self._action_choice()
 
-    def _input_layer(self, neuron_index):
-        rj = np.exp((-(neuron_index[0] - self.state[0]) ** 2) /
-                    self.x_sigma - ((neuron_index[1] - self.state[1]) ** 2) /
-                    self.x_d_sigma)
+    def _input_layer(self, neuron_index, old_state_flag):
+        if (old_state_flag):
+            rj = np.exp((-(neuron_index[0] - self.old_state[0]) ** 2) /
+                        self.x_sigma - ((neuron_index[1] - self.old_state[1]) ** 2) /
+                        self.x_d_sigma)
+        else:
+            rj = np.exp((-(neuron_index[0] - self.state[0]) ** 2) /
+                        self.x_sigma - ((neuron_index[1] - self.state[1]) ** 2) /
+                        self.x_d_sigma)
         return rj
 
-    def _output_layer(self, action_index):
+    def _output_layer(self, action_index, old_state_flag):
         q_weights = 0.0
         for n in np.arange(self.neuron_count):
             q_weights += (self.weights[n][action_index] *
-                          self._input_layer(self.centers[n]))
+                          self._input_layer(self.centers[n], old_state_flag))
         # self.hold[action_index] = q_weights
         return q_weights
 
@@ -156,11 +161,12 @@ class DummyAgent:
         Eligibility updates using the SARSA protocol.
         """
         action = self.action_index_["{}".format(self.last_action)]
+        self.e[self.old_index, action] += 1
         self.e *= self.lambda_ * self.gamma_
-        # self.e[self.old_index, action] += \
+        #self.e[self.old_index, action] += \
         #        self._input_layer(self.centers[self.old_index])
-        for i in np.arange(self.neuron_count):
-            self.e[i, action] += self._input_layer(self.centers[i])
+        #for i in np.arange(self.neuron_count):
+        #    self.e[i, action] += self._input_layer(self.centers[i])
 
     def _update_weights(self):
         """
@@ -183,8 +189,8 @@ class DummyAgent:
         index_last_action = self.action_index_["{}".format(self.last_action)]
         index_action = self.action_index_["{}".format(self.action)]
         self.dirac = (reward - (
-            self._output_layer(index_last_action) -
-            self.gamma_ * self._output_layer(index_action)))
+            self._output_layer(index_last_action, True) -
+            self.gamma_ * self._output_layer(index_action, False)))
 
     def _action_choice(self):
         """
@@ -197,18 +203,18 @@ class DummyAgent:
         c_prob_left = c_prob_right + self._soft_max_rule(self.activity["Left"])
         test_value = np.random.rand()
 
-        # print("right_p = " + str(c_prob_right))
-        # print("left_p  = " + str(c_prob_left - c_prob_right))
-        # print("neutral = " + str(1 - c_prob_left))
+        #print("right_p = " + str(c_prob_right))
+        #print("left_p  = " + str(c_prob_left - c_prob_right))
+        #print("neutral = " + str(1 - c_prob_left))
 
         if test_value < c_prob_right:
-            # print("RIGHT!")
+            #print("RIGHT!")
             self._update_state(1)
         elif test_value < c_prob_left:
-            # print("LEFT!")
+            #print("LEFT!")
             self._update_state(-1)
         else:
-            # print("neutral...")
+            #print("neutral...")
             self._update_state(0)
 
     def _soft_max_rule(self, action_index):
@@ -219,7 +225,7 @@ class DummyAgent:
             probability = 1 / 3
             return probability
         else:
-            probability = (np.exp(self._output_layer(action_index)
+            probability = (np.exp(self._output_layer(action_index, False)
                                   / self.initial_temperature_)
                            / self._all_actions())
             return probability
@@ -230,7 +236,7 @@ class DummyAgent:
         """
         total_q = 0.0
         for action_index in self.action_index_.values():
-            total_q += np.exp(self._output_layer(action_index)
+            total_q += np.exp(self._output_layer(action_index, False)
                               / self.initial_temperature_)
         return total_q
 
@@ -266,8 +272,8 @@ class DummyAgent:
 if __name__ == "__main__":
     t = 0
     while t < 1:
-        d = DummyAgent(run_type="test", n_episodes=2, n_steps=10000,
-                       neurons=10, eta=0.1, initial_temperature=1.0)
+        d = DummyAgent(run_type="test", n_episodes=10, n_steps=10000,
+                       neurons=20, eta=0.1, initial_temperature=1.0)
         d.initiate_trial(visual=False)
         t += 1
 
