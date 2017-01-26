@@ -317,7 +317,7 @@ class DummyAgent:
 if __name__ == "__main__":
     t = 0
     while t < 10:
-        d = DummyAgent(run_type="default", n_episodes=50, n_steps=10000,
+        d = DummyAgent(run_type="default", n_episodes=100, n_steps=10000,
                        neurons=20, eta=0.05, initial_temperature=1.0,
                        verbose=False,
                        explore_weights=True, weights=1.0)
