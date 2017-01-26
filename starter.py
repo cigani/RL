@@ -16,9 +16,10 @@ class DummyAgent:
                  initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
                  initial_temperature=1.0, min_temperature=0.01,
                  temperature_half_life=1.0, neurons=10, time=100,
-                 dt=0.01, actions=3, n_steps=5000, n_episodes=350,
+                 dt=0.01, actions=3, n_steps=10000, n_episodes=100,
                  run_type="Default", explore_temp=False, explore_lam=False,
-                 explore_both=False, explore_weights=False, weights=.05):
+                 explore_both=False, explore_weights=False, weights=.05,
+                 greedy=False, verbose=False):
 
         if mountain_car is None:
             self.mountain_car = mountaincar.MountainCar()
@@ -34,6 +35,7 @@ class DummyAgent:
         self.min_lambda_ = 0
 
         # Choice of Random Action or Not
+        self.greedy_flag = greedy
         self.initial_epsilon_ = initial_epsilon
         self.min_epsilon_ = min_epsilon
         self.epsilon_half_life_ = half_life
@@ -56,12 +58,15 @@ class DummyAgent:
         self.x_d_sigma = self.phi_centers_distance ** 2
 
         # Activity / State Parameters
+        self.number_of_actions = actions
         self.activity = {"Right": 0, "Left": 1, "Neutral": 2}
         self.action_index_ = {"1": 0, "-1": 1, "0": 2}
         self.last_action = None
         self.action = 0
         self.old_state = None
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
+        self.old_index = None
+        self.index = self._get_index(self.state)
         # self.hold = np.zeros(3)
 
         # Trace Memory
@@ -69,9 +74,10 @@ class DummyAgent:
         if not explore_weights:
             self.weights = np.random.rand(self.neuron_count,
                                           actions)
-            self._normalize_weights()
+            #self._normalize_weights()
         if explore_weights:
             self.weights = np.ones((self.neuron_count, actions)) * weights
+            #self._normalize_weights()
 
         # Time step for Simulation
         self.time = time
@@ -89,10 +95,18 @@ class DummyAgent:
                                                datetime.now().strftime(
                                                    '%m-%d-%H.%M.%S'))
 
+        self.verbose = verbose
+
+    def reset(self):
+        self.mountain_car.reset()
+        self.state = [self.mountain_car.x, self.mountain_car.x_d]
+        self.e = np.zeros((self.neuron_count, self.number_of_actions))
+
     def initiate_trial(self, visual=False):
         # H5 Data Sets #
         h5data = dataSets.generate_data_sets(self.filename, self.centers)
         time_to_reward = [0]
+        steps_to_reward = [0]
         # prepare for the visualization
         if visual:
             plb.ion()
@@ -101,23 +115,32 @@ class DummyAgent:
             mv.create_figure(self.n_steps, self.n_steps)
             plb.show()
         for episode_count in np.arange(self.n_episodes):
-            self.mountain_car.reset()
+            self.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
+                if (self.verbose):
+                    print
+                    print "Episode             : "+str(episode_count)
+                    print "Simulation Step     : "+str(step_count)
+                    print "Mountain Car state  : "+str(self.state)
+                    print "Grid Center index   : "+str(self.index)
+                    print "Grid Center         : "+str(self.centers[self.index])
                 self._learn()
                 if visual:
                     # update the visualization
                     mv.update_figure()
                     plb.show()
                     plb.pause(0.0001)
-                if self.mountain_car.R > 0.0 or step_count == self.n_steps - 1:
-                    print("\rreward obtained at t = ",
-                          self.mountain_car.t, "\treward of: ",
-                          self.mountain_car.R)
+                if self.mountain_car.R > 0.0:
+                    print "Reward obtained at t = "+str(self.mountain_car.t)
+                    steps_to_reward[0] = step_count
                     break
+                elif step_count == self.n_steps - 1:
+                    print "Maximum number of iterations reached.  No reward."
+                    steps_to_reward[0] = step_count
             time_to_reward[0] = self.mountain_car.t
             dataSets.generate_data_save(h5data, episode_count, time_to_reward,
-                                        self.weights)
+                                        steps_to_reward, self.weights)
 
     def _parameter_settings(self, episode_count):
         if self.explore_temp:
@@ -160,9 +183,10 @@ class DummyAgent:
         """
         Eligibility updates using the SARSA protocol.
         """
-        action = self.action_index_["{}".format(self.last_action)]
-        self.e[self.old_index, action] += 1
+        index_action = self.action_index_["{}".format(self.action)]
+        #action = self.action_index_["{}".format(self.last_action)]
         self.e *= self.lambda_ * self.gamma_
+        self.e[self.old_index, index_action] += 1
         #self.e[self.old_index, action] += \
         #        self._input_layer(self.centers[self.old_index])
         #for i in np.arange(self.neuron_count):
@@ -172,9 +196,11 @@ class DummyAgent:
         """
         Weight updates using the SARSA protocol.
         """
-        self._td_error()
-        self.weights += self.dirac * self.eta_ * self.e
-        self._normalize_weights()
+        for i in range(self.neuron_count):
+            for j in range(self.number_of_actions):
+                self.weights[i][j] += self.eta_ * self.dirac * self.e[i][j]
+                #/ self._input_layer(self.centers[i], True)
+        #self._normalize_weights()
         # self.weights = np.clip(self.weights, -1, 1)
 
     def _normalize_weights(self):
@@ -199,22 +225,55 @@ class DummyAgent:
         Cumulative probabilities for quick implementation.
         """
 
-        c_prob_right = self._soft_max_rule(self.activity["Right"])
-        c_prob_left = c_prob_right + self._soft_max_rule(self.activity["Left"])
+        if (self.verbose):
+            index = self._get_index(self.state)
+            print "w(s, Right)         : "+str(self.weights[index][0])
+            print "w(s, Left)          : "+str(self.weights[index][1])
+            print "w(s, Neutral)       : "+str(self.weights[index][2])
+            print "Q(s, Right)         : "+str(self._output_layer(0, False))
+            print "Q(s, Left)          : "+str(self._output_layer(1, False))
+            print "Q(s, Neutral)       : "+str(self._output_layer(2, False))
+        
+        prob_right = self._soft_max_rule(self.activity["Right"])
+        prob_left = self._soft_max_rule(self.activity["Left"])
+        prob_neutral = self._soft_max_rule(self.activity["Neutral"])
+        
+        c_prob_right = prob_right
+        c_prob_left = c_prob_right + prob_left
         test_value = np.random.rand()
 
-        #print("right_p = " + str(c_prob_right))
-        #print("left_p  = " + str(c_prob_left - c_prob_right))
-        #print("neutral = " + str(1 - c_prob_left))
+        if (self.greedy_flag):
+            if (np.random.rand() <= self.initial_epsilon_):
+                print("Greedy choice taken")
+                if (prob_right > prob_left) and (prob_right > prob_neutral):
+                    c_prob_right = 1
+                    c_prob_left = 0
+                    c_prob_neutral = 0
+                elif (prob_left > prob_right) and (prob_left > prob_neutral):
+                    c_prob_right = 0
+                    c_prob_left = 1
+                    c_prob_neutral = 0
+                else:
+                    c_prob_right = 0
+                    c_prob_left = 0
+                    c_prob_neutral = 1    
+
+        if (self.verbose):
+            print("Probability Right   : " + str(prob_right))
+            print("Probability Left    : " + str(prob_left))
+            print("Probability Neutral : " + str(prob_neutral))
 
         if test_value < c_prob_right:
-            #print("RIGHT!")
+            if (self.verbose):
+                print("Action taken        : RIGHT!")
             self._update_state(1)
         elif test_value < c_prob_left:
-            #print("LEFT!")
+            if (self.verbose):
+                print("Action taken        : LEFT!")
             self._update_state(-1)
         else:
-            #print("neutral...")
+            if (self.verbose):
+                print("Action taken        : neutral...")
             self._update_state(0)
 
     def _soft_max_rule(self, action_index):
@@ -246,13 +305,15 @@ class DummyAgent:
         self.old_x = self.mountain_car.x
         self.old_x_d = self.mountain_car.x_d
         self.old_state = [self.old_x, self.old_x_d]
-        self.old_index = self._get_index(self.old_state)
+        self.old_index = self.index
+        #self.old_index = self._get_index(self.old_state)
         self.mountain_car.apply_force(self.action)
         self.mountain_car.simulate_timesteps(self.time, self.dt)
         self.x = self.mountain_car.x
         self.x_d = self.mountain_car.x_d
         self.state = [self.x, self.x_d]
-        self.new_index = self._get_index(self.state)
+        self.index = self._get_index(self.state)
+        self._td_error()
         self._update_eligibility()
         self._update_weights()
 
@@ -271,9 +332,12 @@ class DummyAgent:
 
 if __name__ == "__main__":
     t = 0
-    while t < 1:
-        d = DummyAgent(run_type="test", n_episodes=10, n_steps=10000,
-                       neurons=20, eta=0.1, initial_temperature=1.0)
+    while t < 10:
+        d = DummyAgent(run_type="default", n_episodes=50, n_steps=10000,
+                       neurons=20, eta=0.05, initial_temperature=1.0,
+                       verbose=True,
+                       explore_weights=True, weights=1.0)
+                       #greedy=True, initial_epsilon=0.1, verbose=True)
         d.initiate_trial(visual=False)
         t += 1
 
