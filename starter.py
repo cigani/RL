@@ -31,7 +31,7 @@ class DummyAgent:
         # Reward Factor
         self.gamma_ = gamma
         # Decay Eligibility
-        self.lambda_ = lam ** (1 / neurons ** 2)
+        self.lambda_ = lam
         self.min_lambda_ = 0
 
         # Choice of Random Action or Not
@@ -240,15 +240,12 @@ class DummyAgent:
             if (prob_right > prob_left) and (prob_right > prob_neutral):
                 c_prob_right = 1
                 c_prob_left = 0
-                c_prob_neutral = 0
             elif (prob_left > prob_right) and (prob_left > prob_neutral):
                 c_prob_right = 0
                 c_prob_left = 1
-                c_prob_neutral = 0
             else:
                 c_prob_right = 0
                 c_prob_left = 0
-                c_prob_neutral = 1
 
         if self.verbose:
             print("Probability Right   : " + str(prob_right))
@@ -318,19 +315,19 @@ class DummyAgent:
 
 
 if __name__ == "__main__":
-    # t = 0
-    # while t < 10:
-    #     d = DummyAgent(run_type="default", n_episodes=50, n_steps=10000,
-    #                    neurons=20, eta=0.05, initial_temperature=1.0,
-    #                    verbose=False,
-    #                    explore_weights=True, weights=1.0)
-    #     # greedy=True, initial_epsilon=0.1, verbose=True)
-    #     d.initiate_trial(visual=False)
-    #     t += 1
+    t = 0
+    while t < 10:
+        d = DummyAgent(run_type="default", n_episodes=50, n_steps=10000,
+                       neurons=20, eta=0.05, initial_temperature=1.0,
+                       verbose=False,
+                       explore_weights=True, weights=1.0)
+        # greedy=True, initial_epsilon=0.1, verbose=True)
+        d.initiate_trial(visual=False)
+        t += 1
 
-    d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=100,
-                   n_steps=10000, neurons=20, eta=0.05 ** (20 ** 2))
-    d.initiate_trial()
+    # d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=100,
+    #                n_steps=10000, neurons=20, eta=0.05 ** (20 ** 2))
+    # d.initiate_trial()
 
     # d = DummyAgent(explore_temp=True, run_type="explore_temp",\
     #                n_episodes=100, n_steps=10000,\
