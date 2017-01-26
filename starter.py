@@ -318,10 +318,7 @@ if __name__ == "__main__":
     t = 0
     while t < 10:
         d = DummyAgent(run_type="default", n_episodes=100, n_steps=10000,
-                       neurons=20, eta=0.05, initial_temperature=1.0,
-                       verbose=False,
-                       explore_weights=True, weights=1.0)
-        # greedy=True, initial_epsilon=0.1, verbose=True)
+                       neurons=20)
         d.initiate_trial(visual=False)
         t += 1
 
