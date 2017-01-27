@@ -263,7 +263,7 @@ class Agent:
         else:
             probability = (np.exp(self._output_layer(action_index, False)
                                   / np.maximum(self.initial_temperature_,
-                                               0.00001))
+                                               0.001))
                            / self._all_actions())
             return probability
 
@@ -274,7 +274,7 @@ class Agent:
         total_q = 0.0
         for action_index in self.action_index_.values():
             total_q += np.exp(self._output_layer(action_index, False)
-                              / np.maximum(self.initial_temperature_, 0.00001))
+                              / np.maximum(self.initial_temperature_, 0.001))
         return total_q
 
     def _update_state(self, command):
@@ -309,7 +309,7 @@ if __name__ == "__main__":
     c = Agent(explore_both=True, lam=0.0, run_type="explore_both")
     d = Agent(explore_weights=True, weights=0.0, run_type="zero_weight")
     e = Agent(explore_weights=True, weights=1.0, run_type="one_weight")
-    f = Agent(initial_temperature=0.0001, run_type="zero_temp")
+    f = Agent(initial_temperature=0.001, run_type="zero_temp")
     g = Agent(initial_temperature=10e5, run_type="inf_temp")
     h = Agent(lam=0.0, run_type="zero_lambda")
     Agent_Variant = [a, b, c, d, e, f, g, h]
