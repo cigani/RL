@@ -11,7 +11,7 @@ import mountaincar
 class Agent:
     def __init__(self, mountain_car=None, eta=0.05, gamma=0.95, lam=0.8,
                  initial_epsilon=0.1, initial_temperature=1.0, neurons=10,
-                 time=100, dt=0.01, actions=3, n_steps=10000, n_episodes=100,
+                 time=100, dt=0.01, actions=3, n_steps=10000, n_episodes=10,
                  run_type="Default", explore_temp=False, explore_lam=False,
                  explore_both=False, explore_weights=False, weights=.05,
                  greedy=False, verbose=False):
@@ -262,7 +262,8 @@ class Agent:
             return probability
         else:
             probability = (np.exp(self._output_layer(action_index, False)
-                                  / self.initial_temperature_)
+                                  / np.maximum(self.initial_temperature_,
+                                               0.00001))
                            / self._all_actions())
             return probability
 
@@ -273,7 +274,7 @@ class Agent:
         total_q = 0.0
         for action_index in self.action_index_.values():
             total_q += np.exp(self._output_layer(action_index, False)
-                              / self.initial_temperature_)
+                              / np.maximum(self.initial_temperature_, 0.00001))
         return total_q
 
     def _update_state(self, command):
@@ -314,7 +315,7 @@ if __name__ == "__main__":
     Agent_Variant = [a, b, c, d, e, f, g, h]
 
     t = 0
-    while t < 10:
+    while t < 1:
         for agent in Agent_Variant:
             agent.initiate_trial()
         t += 1
