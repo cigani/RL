@@ -32,7 +32,7 @@ class Loader:
     def view_pickle(self):
         """ Do whatever you need in here this should be a cleaner way to
         view the data set for you though"""
-        print (self.PATH)
+        print(self.PATH)
         pickle_view = pickle.load(open("{0}/data-dict".format(self.PATH),
                                        "rb"))
         for k in pickle_view.keys():
