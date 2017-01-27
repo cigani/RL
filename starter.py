@@ -13,10 +13,8 @@ class DummyAgent:
     """
 
     def __init__(self, mountain_car=None, eta=0.1, gamma=0.95, lam=0.8,
-                 initial_epsilon=0.1, min_epsilon=0.0, half_life=1.0,
-                 initial_temperature=1.0, min_temperature=0.01,
-                 temperature_half_life=1.0, neurons=10, time=100,
-                 dt=0.01, actions=3, n_steps=10000, n_episodes=100,
+                 initial_epsilon=0.1, initial_temperature=1.0, neurons=10,
+                 time=100, dt=0.01, actions=3, n_steps=10000, n_episodes=100,
                  run_type="Default", explore_temp=False, explore_lam=False,
                  explore_both=False, explore_weights=False, weights=.05,
                  greedy=False, verbose=False):
@@ -37,23 +35,20 @@ class DummyAgent:
         # Choice of Random Action or Not
         self.greedy_flag = greedy
         self.initial_epsilon_ = initial_epsilon
-        self.min_epsilon_ = min_epsilon
-        self.epsilon_half_life_ = half_life
 
         # Exploration vs Exploitation parameter
         self.initial_temperature_ = initial_temperature
-        self.min_temperature_ = min_temperature
-        self.temperature_half_life_ = temperature_half_life
+        self.min_temperature_ = 0.001
 
         # Neuron Centers
         self.neuron = neurons
         self.neuron_count = self.neuron ** 2
-        _x_space_, self.x_centers_distance = np.linspace(-150, 30, neurons,
-                                                         retstep=True)
-        _x_d_space_, self.phi_centers_distance = np.linspace(-15, 15, neurons,
-                                                             retstep=True)
-        self.centers = np.array(list(itertools.product(_x_space_,
-                                                       _x_d_space_)))
+        _x_space_, self.x_centers_distance = np.linspace(
+            -150, 30, neurons, retstep=True)
+        _x_d_space_, self.phi_centers_distance = np.linspace(
+            -15, 15, neurons, retstep=True)
+        self.centers = np.array(
+            list(itertools.product(_x_space_, _x_d_space_)))
         self.x_sigma = self.x_centers_distance ** 2
         self.x_d_sigma = self.phi_centers_distance ** 2
 
@@ -67,17 +62,13 @@ class DummyAgent:
         self.state = [self.mountain_car.x, self.mountain_car.x_d]
         self.old_index = None
         self.index = self._get_index(self.state)
-        # self.hold = np.zeros(3)
 
         # Trace Memory
         self.e = np.zeros((self.neuron_count, actions))
         if not explore_weights:
-            self.weights = np.random.rand(self.neuron_count,
-                                          actions)
-            # self._normalize_weights()
+            self.weights = np.random.rand(self.neuron_count, actions)
         if explore_weights:
             self.weights = np.ones((self.neuron_count, actions)) * weights
-            # self._normalize_weights()
 
         # Time step for Simulation
         self.time = time
@@ -91,10 +82,10 @@ class DummyAgent:
         self.explore_both = explore_both
 
         # Save Data
-        self.filename = "{0}-{1}s.hdf5".format(run_type,
-                                               datetime.now().strftime(
-                                                   '%m-%d-%H.%M.%S'))
+        save_data_name = datetime.now().strftime('%m-%d-%H.%M.%S')
+        self.filename = "{0}-{1}s.hdf5".format(run_type, save_data_name)
 
+        # Verbose Toggle
         self.verbose = verbose
 
     def reset(self):
@@ -178,7 +169,6 @@ class DummyAgent:
         for n in np.arange(self.neuron_count):
             q_weights += (self.weights[n][action_index] *
                           self._input_layer(self.centers[n], old_state_flag))
-        # self.hold[action_index] = q_weights
         return q_weights
 
     def _update_eligibility(self):
@@ -315,50 +305,48 @@ class DummyAgent:
 
 
 if __name__ == "__main__":
-    t = 0
-    while t < 10:
-        d = DummyAgent(run_type="default", n_episodes=100, n_steps=10000,
-                       neurons=20)
-        d.initiate_trial(visual=False)
-        t += 1
+    # t = 0
+    # while t < 10:
+    #     d = DummyAgent(run_type="default", n_episodes=100, n_steps=10000,
+    #                    neurons=20)
+    #     d.initiate_trial(visual=False)
+    #     t += 1
 
-    # d = DummyAgent(explore_lam=True, run_type="explore_lam", n_episodes=100,
-    #                n_steps=10000, neurons=20, eta=0.05 ** (20 ** 2))
+    # d = DummyAgent(lam=0.0, neurons=20, n_steps=10000, n_episodes=100,
+    #                run_type="explore_lam", explore_lam=True)
     # d.initiate_trial()
 
-    # d = DummyAgent(explore_temp=True, run_type="explore_temp",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
+    d = DummyAgent(explore_temp=True, run_type="explore_temp",
+                   n_episodes=100, n_steps=10000,
+                   neurons=10, eta=0.05)
+    d.initiate_trial()
     #
-    # d = DummyAgent(explore_both=True, run_type="explore_both",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
-    #
-    # d = DummyAgent(explore_weights=True, weights=0.0,\
-    #                run_type="zero_weight",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
-    #
-    # d = DummyAgent(explore_weights=True, weights=1.0,
-    # run_type="one_weight",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
-    #
-    # d = DummyAgent(initial_temperature=0.0001, run_type="zero_temp",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
-    #
-    # d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
-    #
-    # d = DummyAgent(lam=0.0, run_type="zero_lambda",\
-    #                n_episodes=100, n_steps=10000,\
-    #                neurons=10, eta=0.05)
-    # d.initiate_trial()
+    d = DummyAgent(explore_both=True, run_type="explore_both",
+                   n_episodes=100, n_steps=10000,
+                   neurons=10, lam=0.0)
+    d.initiate_trial()
+
+    d = DummyAgent(explore_weights=True, weights=0.0,
+                   run_type="zero_weight",
+                   n_episodes=100, n_steps=10000,
+                   neurons=10, eta=0.05)
+    d.initiate_trial()
+
+    d = DummyAgent(explore_weights=True, weights=1.0,
+                   run_type="one_weight", n_episodes=100, n_steps=10000,
+                   neurons=10, eta=0.05)
+    d.initiate_trial()
+
+    d = DummyAgent(initial_temperature=0.0001, run_type="zero_temp",
+                   n_episodes=100, n_steps=10000, neurons=10, eta=0.05)
+    d.initiate_trial()
+
+    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
+                   n_episodes=100, n_steps=10000,
+                   neurons=10, eta=0.05)
+    d.initiate_trial()
+
+    d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=100,
+                   n_steps=10000,
+                   neurons=10, eta=0.05)
+    d.initiate_trial()
