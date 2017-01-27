@@ -12,28 +12,27 @@ plt.figure('default')
 for filename in list_of_files:
     if filename.startswith('default'):
         dataset = []
-        print filename
+        print(filename)
         f0 = h5py.File(filename, 'r')
-        
+
         group = f0['time_to_reward']
 
         i=0
-        while ( i < np.size(group) ):
+        while i < np.size(group):
             dataset.append(group['time_to_reward_'+str(i)])
             i +=1
 
-        print np.size(dataset[:])
+        print(np.size(dataset[:]))
         plt.plot(np.array(dataset[:]), label=filename)
 
         i=0
-        #while ( i < 0):
-        while ( i < np.size(dataset)):
+        while i < np.size(dataset):
             try:
                 average_time[i] += dataset[i][:]
             except IndexError:
                 average_time.append(dataset[i][:])
             i += 1
-            
+
         f0.close()
         nFiles += 1
 
@@ -43,7 +42,7 @@ plt.ylabel('Time to Reward')
 plt.savefig('test.jpg')
 plt.show()
 
-print average_time
+print(average_time)
 
 plt.figure('Average Time to Reward per Episode')
 plt.title('Average Time to Reward per Episode')

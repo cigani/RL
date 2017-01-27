@@ -8,11 +8,9 @@ import dataSets
 import mountaincar
 
 
-class DummyAgent:
-    """A not so good agent for the mountain-car task.
-    """
+class Agent:
 
-    def __init__(self, mountain_car=None, eta=0.1, gamma=0.95, lam=0.8,
+    def __init__(self, mountain_car=None, eta=0.05, gamma=0.95, lam=0.8,
                  initial_epsilon=0.1, initial_temperature=1.0, neurons=10,
                  time=100, dt=0.01, actions=3, n_steps=10000, n_episodes=100,
                  run_type="Default", explore_temp=False, explore_lam=False,
@@ -305,48 +303,34 @@ class DummyAgent:
 
 
 if __name__ == "__main__":
-    # t = 0
-    # while t < 10:
-    #     d = DummyAgent(run_type="default", n_episodes=100, n_steps=10000,
-    #                    neurons=20)
-    #     d.initiate_trial(visual=False)
-    #     t += 1
+    t = 0
+    while t < 10:
+        d = Agent(run_type="default")
+        d.initiate_trial(visual=False)
+        t += 1
 
-    # d = DummyAgent(lam=0.0, neurons=20, n_steps=10000, n_episodes=100,
-    #                run_type="explore_lam", explore_lam=True)
-    # d.initiate_trial()
+    d = Agent(lam=0.0, explore_lam=True, run_type="explore_lam")
+    d.initiate_trial()
 
-    d = DummyAgent(explore_temp=True, run_type="explore_temp",
-                   n_episodes=100, n_steps=10000,
-                   neurons=10, eta=0.05)
+    d = Agent(explore_temp=True, run_type="explore_temp")
     d.initiate_trial()
     #
-    d = DummyAgent(explore_both=True, run_type="explore_both",
-                   n_episodes=100, n_steps=10000,
-                   neurons=10, lam=0.0)
+    d = Agent(explore_both=True, lam=0.0, run_type="explore_both")
     d.initiate_trial()
 
-    d = DummyAgent(explore_weights=True, weights=0.0,
-                   run_type="zero_weight",
-                   n_episodes=100, n_steps=10000,
-                   neurons=10, eta=0.05)
+    d = Agent(explore_weights=True, weights=0.0,
+              run_type="zero_weight")
     d.initiate_trial()
 
-    d = DummyAgent(explore_weights=True, weights=1.0,
-                   run_type="one_weight", n_episodes=100, n_steps=10000,
-                   neurons=10, eta=0.05)
+    d = Agent(explore_weights=True, weights=1.0,
+              run_type="one_weight")
     d.initiate_trial()
 
-    d = DummyAgent(initial_temperature=0.0001, run_type="zero_temp",
-                   n_episodes=100, n_steps=10000, neurons=10, eta=0.05)
+    d = Agent(initial_temperature=0.0001, run_type="zero_temp")
     d.initiate_trial()
 
-    d = DummyAgent(initial_temperature=10e5, run_type="inf_temp",
-                   n_episodes=100, n_steps=10000,
-                   neurons=10, eta=0.05)
+    d = Agent(initial_temperature=10e5, run_type="inf_temp")
     d.initiate_trial()
 
-    d = DummyAgent(lam=0.0, run_type="zero_lambda", n_episodes=100,
-                   n_steps=10000,
-                   neurons=10, eta=0.05)
+    d = Agent(lam=0.0, run_type="zero_lambda")
     d.initiate_trial()
