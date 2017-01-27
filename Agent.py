@@ -9,7 +9,6 @@ import mountaincar
 
 
 class Agent:
-
     def __init__(self, mountain_car=None, eta=0.05, gamma=0.95, lam=0.8,
                  initial_epsilon=0.1, initial_temperature=1.0, neurons=10,
                  time=100, dt=0.01, actions=3, n_steps=10000, n_episodes=100,
@@ -303,34 +302,18 @@ class Agent:
 
 
 if __name__ == "__main__":
+    a = Agent(run_type="default")
+    b = Agent(explore_temp=True, run_type="explore_temp")
+    c = Agent(explore_both=True, lam=0.0, run_type="explore_both")
+    d = Agent(explore_weights=True, weights=0.0, run_type="zero_weight")
+    e = Agent(explore_weights=True, weights=1.0, run_type="one_weight")
+    f = Agent(initial_temperature=0.0001, run_type="zero_temp")
+    g = Agent(initial_temperature=10e5, run_type="inf_temp")
+    h = Agent(lam=0.0, run_type="zero_lambda")
+    Agent_Variant = [a, b, c, d, e, f, g, h]
+
     t = 0
     while t < 10:
-        d = Agent(run_type="default")
-        d.initiate_trial(visual=False)
+        for agent in Agent_Variant:
+            agent.initiate_trial()
         t += 1
-
-    d = Agent(lam=0.0, explore_lam=True, run_type="explore_lam")
-    d.initiate_trial()
-
-    d = Agent(explore_temp=True, run_type="explore_temp")
-    d.initiate_trial()
-    #
-    d = Agent(explore_both=True, lam=0.0, run_type="explore_both")
-    d.initiate_trial()
-
-    d = Agent(explore_weights=True, weights=0.0,
-              run_type="zero_weight")
-    d.initiate_trial()
-
-    d = Agent(explore_weights=True, weights=1.0,
-              run_type="one_weight")
-    d.initiate_trial()
-
-    d = Agent(initial_temperature=0.0001, run_type="zero_temp")
-    d.initiate_trial()
-
-    d = Agent(initial_temperature=10e5, run_type="inf_temp")
-    d.initiate_trial()
-
-    d = Agent(lam=0.0, run_type="zero_lambda")
-    d.initiate_trial()
