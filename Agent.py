@@ -85,16 +85,12 @@ class Agent:
         # Verbose Toggle
         self.verbose = verbose
 
-    def reset(self):
-        self.mountain_car.reset()
-        self.state = [self.mountain_car.x, self.mountain_car.x_d]
-        self.e = np.zeros((self.neuron_count, self.number_of_actions))
-
     def initiate_trial(self, visual=False):
-        # H5 Data Sets #
+        # H5 Data Sets
         h5data = dataSets.generate_data_sets(self.filename, self.centers)
         time_to_reward = [0]
         steps_to_reward = [0]
+
         # prepare for the visualization
         if visual:
             plb.ion()
@@ -102,17 +98,17 @@ class Agent:
             mv = mountaincar.MountainCarViewer(self.mountain_car)
             mv.create_figure(self.n_steps, self.n_steps)
             plb.show()
+
         for episode_count in np.arange(self.n_episodes):
             self.reset()
             self._parameter_settings(episode_count)
             for step_count in range(self.n_steps):
                 if self.verbose:
                     print("Episode: " + str(episode_count))
-                    print("Simulation Step: {0}".format(str(step_count)))
-                    print("Mountain Car state: {0}".format(str(self.state)))
-                    print("Grid Center index: {0}".format(str(self.index)))
-                    print("Grid Center: {0}".format(str(self.centers
-                                                        [self.index])))
+                    print("Simulation Step: {0}".format(step_count))
+                    print("Mountain Car state: {0}".format(self.state))
+                    print("Grid Center index: {0}".format(self.index))
+                    print("Grid Center: {0}".format(self.centers[self.index]))
                 self._learn()
                 if visual:
                     # update the visualization
@@ -129,6 +125,11 @@ class Agent:
             time_to_reward[0] = self.mountain_car.t
             dataSets.generate_data_save(h5data, episode_count, time_to_reward,
                                         steps_to_reward, self.weights)
+
+    def reset(self):
+        self.mountain_car.reset()
+        self.state = [self.mountain_car.x, self.mountain_car.x_d]
+        self.e = np.zeros((self.neuron_count, self.number_of_actions))
 
     def _parameter_settings(self, episode_count):
         if self.explore_temp:
